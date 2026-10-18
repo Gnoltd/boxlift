@@ -1,0 +1,10 @@
+# Vercel only needs extension/ (minus models), web/ and tools/build-web.js: `node tools/build-web.js` builds web/dist.
+extension/models/*.onnx
+work/
+tests/
+docs/
+.superpowers/
+dist/
+.venv/
+tools/*
+!tools/build-web.js

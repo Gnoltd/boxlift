@@ -97,5 +97,7 @@ ok('resolveModelBase: throws on Vercel without MODEL_BASE', /MODEL_BASE/.test(th
 const sp = require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools/build-web.js')], { env: { ...process.env, VERCEL: '1', MODEL_BASE: '' }, encoding: 'utf8' });
 ok('build-web.js exits non-zero on Vercel without MODEL_BASE', sp.status !== 0 && /MODEL_BASE/.test(sp.stderr));
 
+const vi = fs.readFileSync(path.join(ROOT, '.vercelignore'), 'utf8').split('\n').map((l) => l.trim());
+ok('.vercelignore drops onnx/tests/docs but keeps tools/build-web.js', ['extension/models/*.onnx', 'tests/', 'docs/', 'tools/*', '!tools/build-web.js'].every((l) => vi.includes(l)) && !vi.some((l) => /^(extension|web)\/?$/.test(l)));
 fs.rmSync(tmp, { recursive: true, force: true });
 process.exit(fails ? 1 : 0);
