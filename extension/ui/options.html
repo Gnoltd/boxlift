@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BoxLift</title>
+<style>
+  :root { color-scheme: dark light;
+    --bg: #0e1116; --surface: #151a21; --raised: #1c222b; --line: #2a313c; --line-hi: #434c5a;
+    --text: #e9edf2; --text-2: #c3cad4; --muted: #98a2b0; --accent: #4c9aff; --accent-hi: #78b2ff; --on-accent: #07111f;
+    --ok: #3fc47f; --err: #f2766b; --shadow: rgba(0,0,0,.55); }
+  @media (prefers-color-scheme: light) { :root {
+    --bg: #eef1f5; --surface: #ffffff; --raised: #f5f7fa; --line: #d9dee6; --line-hi: #9aa2ae;
+    --text: #14181f; --text-2: #363d48; --muted: #525b68; --accent: #1a5fd0; --accent-hi: #1249a8; --on-accent: #ffffff;
+    --ok: #17794a; --err: #bb3326; --shadow: rgba(20,24,31,.16); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/20px Inter, "Segoe UI", system-ui, -apple-system, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 0 16px 48px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 20px 0 16px; }
+  header img { height: 36px; display: block; }
+  header .sp { flex: 1; }
+  h1 { font-size: 15px; line-height: 22px; font-weight: 650; margin: 0 0 4px; }
+  h2 { font-size: 15px; line-height: 22px; font-weight: 650; margin: 0 0 4px; }
+  p { margin: 0 0 12px; } .muted { color: var(--muted); } .small { font-size: 11.5px; line-height: 16px; }
+  section.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 12px; }
+  code { font: 12px ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; color: var(--text); }
+  a { color: var(--accent); } a:hover { color: var(--accent-hi); }
+  input { width: 100%; padding: 6px 8px; background: var(--raised); color: var(--text); border: 1px solid var(--line-hi); border-radius: 4px; font: inherit; }
+  input::placeholder { color: var(--muted); }
+  label { display: grid; gap: 4px; font-weight: 600; font-size: 12px; color: var(--text-2); margin-top: 8px; }
+  button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line-hi); background: var(--raised); color: var(--text); font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; } button.pri:hover { background: var(--accent-hi); }
+  button.ghost { background: none; border-color: transparent; color: var(--muted); } button.ghost:hover { color: var(--text); border-color: var(--line); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; } .row input { flex: 1; min-width: 200px; }
+  ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+  li { display: flex; gap: 10px; align-items: center; padding: 6px 10px; background: var(--raised); border: 1px solid var(--line); border-radius: 6px; }
+  li code { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; padding: 1px; }
+  .lang button { padding: 2px 10px; border: 0; background: none; color: var(--muted); font-weight: 600; }
+  .lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+</style></head>
+<body>
+<main>
+  <header>
+    <img src="../assets/Logo/boxlift-lockup.svg" alt="BoxLift">
+    <span class="sp"></span>
+    <div class="lang" role="group" aria-label="Language"><button id="langVi" data-lang="vi">VI</button><button id="langEn" data-lang="en">EN</button></div>
+  </header>
+  <h1 data-i18n="opt.title"></h1>
+  <p class="muted" data-i18n="opt.intro"></p>
+
+  <section class="card">
+    <h2 data-i18n="opt.cvat.title"></h2>
+    <p class="muted small" data-i18n="opt.cvat.hint"></p>
+    <div class="row"><input id="url" type="url" placeholder="https://cvat.congty.vn"><button id="add" class="pri" data-i18n="opt.cvat.add"></button></div>
+    <ul id="list"></ul>
+    <p class="small" id="msg" role="status" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="card">
+    <h2 data-i18n="opt.calib.title"></h2>
+    <p class="muted"><span data-i18n="opt.calib.labhint"></span> <a href="lab.html" target="_blank" data-i18n="opt.calib.lab"></a></p>
+    <p class="muted" style="margin-bottom:8px" data-i18n="opt.calib.hint"></p>
+    <button id="clear" data-i18n="opt.calib.clear"></button>
+    <p class="small" id="calMsg" role="status" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="card">
+    <h2 data-i18n="opt.log.title"></h2>
+    <p class="muted"><span data-i18n="opt.log.hint"></span> <a id="openLog" href="logtab.html" target="_blank" data-i18n="opt.log.open"></a></p>
+    <label>URL <input id="supUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
+    <label>Anon key <input id="supKey" type="password" placeholder="anon key" autocomplete="off"></label>
+    <div class="row"><button id="supSave" class="pri" data-i18n="opt.log.save"></button><button id="supClear" data-i18n="opt.log.clear"></button></div>
+    <p class="small" id="supMsg" role="status" style="margin:8px 0 0"></p>
+    <p class="muted small" id="deviceIdLine" style="margin:8px 0 0"></p>
+  </section>
+</main>
+<script src="../function/i18n.js"></script>
+<script src="../function/supalog.js"></script>
+<script src="options.js"></script>
+</body></html>

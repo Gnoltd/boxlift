@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BoxLift · Nhật ký thao tác</title>
+<link rel="stylesheet" href="boxlift.css">
+<link rel="stylesheet" href="logtab.css">
+</head>
+<body data-title="log.title">
+<div class="main">
+
+  <header class="bar">
+    <span class="brand"><img src="../assets/Logo/boxlift-mark.svg" alt="">BoxLift<span class="sub" data-i18n="log.title"></span></span>
+    <select id="sessionSelect" data-i18n-title="log.session.title"></select>
+    <span class="spacer"></span>
+    <button id="btnRefresh" class="btn" data-i18n="log.refresh"></button>
+    <button id="btnDownload" class="btn primary" data-i18n="log.download" data-i18n-title="log.download.tip"></button>
+    <button id="btnDeleteSession" class="btn danger" data-i18n="log.delsession" data-i18n-title="log.delsession.tip"></button>
+    <button id="btnDeleteAll" class="btn danger" data-i18n="log.delall" data-i18n-title="log.delall.tip"></button>
+    <div class="lang" role="group" aria-label="Language"><button data-lang="vi">VI</button><button data-lang="en">EN</button></div>
+  </header>
+
+  <!-- Chưa cấu hình Supabase -->
+  <div id="noConfig" class="no-config">
+    <div>
+      <h2 data-i18n="log.noconfig.title"></h2>
+      <p><span data-i18n="log.noconfig.pre"></span><a id="configLink" href="#" data-i18n="log.noconfig.link"></a><span data-i18n="log.noconfig.post"></span></p>
+    </div>
+  </div>
+
+  <!-- Nội dung chính -->
+  <div id="mainContent" class="content" hidden>
+
+    <div id="expiryWarn" class="warn-banner" hidden></div>
+    <p id="msg" class="msg" hidden role="status"></p>
+
+    <div class="filters">
+      <label><span data-i18n="log.f.job"></span> <input id="filterJob" type="text" placeholder="18126"></label>
+      <label><span data-i18n="log.f.action"></span>
+        <select id="filterAction">
+          <option value="" data-i18n="log.f.all"></option>
+          <option value="save">save</option>
+          <option value="skip">skip</option>
+        </select>
+      </label>
+      <label><span data-i18n="log.f.from"></span> <input id="filterFrom" type="date"></label>
+      <label><span data-i18n="log.f.to"></span> <input id="filterTo" type="date"></label>
+    </div>
+
+    <div class="summary">
+      <div class="stat"><span class="num" id="sumTotal">0</span><span class="lbl" data-i18n="log.sum.total"></span></div>
+      <div class="stat"><span class="num" id="sumSaved">0</span><span class="lbl" data-i18n="log.sum.saved"></span></div>
+      <div class="stat"><span class="num" id="sumDuration">0s</span><span class="lbl" data-i18n="log.sum.duration"></span></div>
+      <div class="stat"><span class="num" id="sumSpeed">—</span><span class="lbl" data-i18n="log.sum.speed"></span></div>
+      <div class="stat"><span class="num" id="sumEdited">—</span><span class="lbl" data-i18n="log.sum.edited"></span></div>
+      <div class="stat"><span class="num" id="sumSkipped">0</span><span class="lbl" data-i18n="log.sum.skipped"></span></div>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <span data-i18n="log.loading"></span>
+    </div>
+
+    <div id="tableWrap" class="table-wrap" hidden>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="log.th.time"></th>
+            <th data-i18n="log.th.job"></th>
+            <th data-i18n="log.th.frame"></th>
+            <th data-i18n="log.th.camera"></th>
+            <th data-i18n="log.th.action"></th>
+            <th data-i18n="log.th.how"></th>
+            <th data-i18n="log.th.edited"></th>
+            <th data-i18n="log.th.iou"></th>
+            <th data-i18n="log.th.dl"></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /mainContent -->
+</div><!-- /main -->
+
+<script src="../function/i18n.js"></script>
+<script src="page-i18n.js"></script>
+<script src="../function/session.js"></script>
+<script src="../function/editlog.js"></script>
+<script src="../function/supalog.js"></script>
+<script src="logtab.js"></script>
+</body>
+</html>

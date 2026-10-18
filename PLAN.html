@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline N1-01B</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: một cột đọc theo thứ tự PLAN.md; bảng rộng cuộn ngang trong khung riêng */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --sunk:#eef1f4; --fg:#17202b; --muted:#5b6675; --line:#dde2e8;
+  --accent:#c77700; --accent-soft:#fdf1df;
+  --lead:#c77700; --track:#2563a8; --ui:#7a4bb3; --test:#1f7a5a; --docs:#4b6b80; --warn:#b23b3b;
+  --font-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#18202a; --sunk:#141b23; --fg:#e6ebf1; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#f0a73a; --accent-soft:#2b2214;
+  --lead:#f0a73a; --track:#6aa6ea; --ui:#b493e6; --test:#5cc49c; --docs:#8fb3c9; --warn:#ec7b7b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#18202a; --sunk:#141b23; --fg:#e6ebf1; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#f0a73a; --accent-soft:#2b2214;
+  --lead:#f0a73a; --track:#6aa6ea; --ui:#b493e6; --test:#5cc49c; --docs:#8fb3c9; --warn:#ec7b7b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:52px}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:2rem;font-weight:700}
+h2{font-size:1.3rem;font-weight:700}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:72ch}
+code{font-family:var(--font-mono);font-size:.84em;background:var(--sunk);padding:0 4px;border-radius:3px}
+section{display:flex;flex-direction:column;gap:14px}
+.sec-head{display:flex;align-items:baseline;gap:10px}
+.sec-head .n{font-family:var(--font-mono);font-size:.8rem;color:var(--accent);font-weight:600}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 12px;font-size:.85rem}
+.note{background:var(--accent-soft);border-left:3px solid var(--accent);padding:10px 14px;border-radius:4px;font-size:.9rem}
+
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.step{flex:1 1 160px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.step .k{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);text-transform:uppercase}
+.step b{display:block}
+.step span{font-size:.85rem;color:var(--muted)}
+.arrow{align-self:center;color:var(--muted);font-family:var(--font-mono)}
+.scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.box ul,.box ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:.92rem}
+.box.out{background:transparent;border-style:dashed}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);min-width:0}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+.blank{display:inline-block;min-width:90px;border-bottom:1px dashed var(--muted);height:1.2em}
+.sched td:first-child{font-family:var(--font-mono);font-size:.8rem;white-space:nowrap;color:var(--muted)}
+.sched tr.key td{background:var(--accent-soft)}
+.sched tr.rest td{color:var(--muted)}
+.sched th.c-lead{color:var(--lead)} .sched th.c-track{color:var(--track)} .sched th.c-ui{color:var(--ui)} .sched th.c-test{color:var(--test)} .sched th.c-docs{color:var(--docs)}
+
+.pos{display:flex;flex-direction:column;gap:10px}
+.pos-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;border-bottom:2px solid var(--c);padding-bottom:6px}
+.pos-head h3{color:var(--c)}
+.pos-head .who{font-size:.82rem;color:var(--muted)}
+.pos.lead{--c:var(--lead)} .pos.track{--c:var(--track)} .pos.ui{--c:var(--ui)} .pos.test{--c:var(--test)} .pos.docs{--c:var(--docs)}
+.tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.task .top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.task .id{font-family:var(--font-mono);font-size:.78rem;font-weight:600;color:var(--c)}
+.task .name{font-weight:600}
+.task .facts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted)}
+.task ol,.task ul{margin:0;padding-left:18px;font-size:.86rem;display:flex;flex-direction:column;gap:3px}
+.task .done{font-size:.84rem;border-top:1px dashed var(--line);padding-top:6px}
+.task .done b{color:var(--test)}
+.must{font-size:.68rem;font-weight:700;color:var(--warn);letter-spacing:.04em;text-transform:uppercase}
+
+.gitflow{display:flex;flex-direction:column;gap:10px}
+.lane{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}
+.lane .lbl{font-family:var(--font-mono);font-size:.82rem;font-weight:600;text-align:right}
+.lane .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-radius:6px;background:var(--sunk);min-width:0}
+.node{font-family:var(--font-mono);font-size:.76rem;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;white-space:nowrap}
+.node.tag{border-color:var(--accent);color:var(--accent);font-weight:600}
+.node.br{border-color:var(--track);color:var(--track)}
+.conn{display:grid;grid-template-columns:120px 1fr;gap:12px}
+.conn span{grid-column:2;font-size:.8rem;color:var(--muted)}
+
+@media (max-width:560px){
+  .lane,.conn{grid-template-columns:1fr}.lane .lbl{text-align:left}.conn span{grid-column:1}
+  .arrow{display:none}
+  .tasks,.scope{grid-template-columns:1fr}
+}
+.diagram{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;overflow-x:auto;min-width:0}
+.diagram pre.mermaid{margin:0;background:transparent;display:block;text-align:center;width:100%}
+.diagram figcaption{font-size:.8rem;color:var(--muted);margin-top:8px}
+</style>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default", fontFamily: "Be Vietnam Pro, system-ui, sans-serif",
+  gantt: { barHeight: 18, fontSize: 12, sectionFontSize: 12, leftPadding: 170 } });
+</script>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">P-009 · Nhóm 1 – Giảm thao tác tay · Bản HTML của PLAN.md</div>
+  <h1>Pipeline N1-01B: cuboid từ bbox 2D chiếu sang LiDAR</h1>
+  <p class="muted" style="margin-top:8px">Từ extension calib-overlay v0.19.0 đến v1.0.0 cho demo 25/10/2026. Quy ước git theo <code>GITHUB_WORKFLOW.md</code>.</p>
+  <div class="meta">
+    <span class="chip">Dữ liệu: <b>nuScenes (camera + LiDAR)</b></span>
+    <span class="chip">Chỉ số: <b>thời gian/cuboid · IoU 3D · yaw</b></span>
+    <span class="chip">Lead: <b>Long</b></span>
+  </div>
+</header>
+
+<p class="note">Chưa phân việc cho ai: cột <b>Phụ trách</b> để trống. Ngày và số giờ là <b>ước lượng</b>, chốt ở buổi họp 12/10.</p>
+
+<section>
+  <div class="sec-head"><span class="n">1</span><h2>Mục tiêu và phạm vi</h2></div>
+  <p>Làm MVP trên 1 cảnh và <b>đo thời gian trước</b>, chưa tối ưu mô hình thêm; số đo quyết định việc gì đáng làm tiếp. Mô hình học (MTrans cho xe con, Frustum PointNet cho lớp khác) là hướng chính. Cách gom cụm hình học giữ làm baseline và dự phòng.</p>
+  <figure class="diagram"><pre class="mermaid">
+flowchart LR
+  A["Bbox 2D&lt;br/&gt;người vẽ hoặc YOLOX (T)"] --&gt; B["Frustum&lt;br/&gt;lấy điểm LiDAR trong khung"]
+  B --&gt; C{"Lớp vật"}
+  C --&gt;|"xe con, có WebGPU"| D["MTrans"]
+  C --&gt;|"xe tải, buýt, người, xe đạp"| E["Frustum PointNet"]
+  C --&gt;|"xe máy, dự phòng"| F["Gom cụm hình học"]
+  D --&gt; G["Cuboid đề xuất&lt;br/&gt;+ đầu / đuôi từ ảnh"]
+  E --&gt; G
+  F --&gt; G
+  G --&gt; H{"Người duyệt"}
+  H --&gt;|"Enter, hoặc sửa rồi Enter"| I["Lưu vào CVAT&lt;br/&gt;thành track"]
+  H --&gt;|"X"| J["Bỏ"]
+  I --&gt; K["Ghi: thời gian, box đã sửa hay không"]
+</pre><figcaption>Luồng MVP: bbox 2D → cuboid đề xuất → người duyệt → lưu track</figcaption></figure>
+  <p class="small muted">Chạy trên 1 cảnh nuScenes không dùng để train (đề xuất 0916).</p>
+  <div class="scope">
+    <div class="box">
+      <h3>Trong phạm vi</h3>
+      <ul>
+        <li>Lưu box lan qua frame thành track CVAT</li>
+        <li>Ghi box đề xuất nào bị sửa trước khi lưu → % box phải sửa</li>
+        <li>UI duyệt box đủ dùng cho người đo không phải dev</li>
+        <li>Script tải model, không đưa model vào git</li>
+        <li>Đo tay vs tool hai lần, bảng kết quả, demo</li>
+      </ul>
+    </div>
+    <div class="box out">
+      <h3>Để sau MVP</h3>
+      <ul class="muted">
+        <li>Lấy nhầm vật che (15% xe con), xoay sai 90° (10%), xe tải bị cắt ngắn (12% đạt)</li>
+        <li>Calib cho dữ liệu khác nuScenes / KITTI, fisheye, LiDAR dày</li>
+        <li>Tách <code>extension/cvat.js</code> (1968 dòng) thành module</li>
+      </ul>
+      <p class="small muted" style="margin-top:8px">Chỉ làm khi số đo lần 1 cho thấy đây là chỗ tốn thời gian người nhất.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">2</span><h2>Kết quả bàn giao</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Mã</th><th>Bàn giao</th><th>Hạn</th><th>Nằm ở</th></tr></thead>
+    <tbody>
+      <tr><td>D1</td><td>Extension v1.0.0: lưu track, ghi box bị sửa, UI duyệt</td><td>19/10 rc · 24/10 release</td><td><code>dev</code> → <code>main</code>, tag <code>v1.0.0</code></td></tr>
+      <tr><td>D2</td><td>Script tải model + hướng dẫn cài cho người đo</td><td>14/10</td><td><code>tools/</code>, README tool</td></tr>
+      <tr><td>D3</td><td>Thiết kế thí nghiệm đo (R1)</td><td>14/10</td><td><code>docs/time-study-design.md</code></td></tr>
+      <tr><td>D4</td><td>Bảng tay vs tool: giây/cuboid, IoU 3D, yaw, % box phải sửa</td><td>23/10</td><td>README tool, slide</td></tr>
+      <tr><td>D5</td><td>Kịch bản demo + slide</td><td>24/10</td><td>thư mục demo</td></tr>
+      <tr><td>D6</td><td>Ghi chép R2 (làm nhẹ mô hình), nếu cần làm</td><td>22/10</td><td><code>docs/model-lite-research.md</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">3</span><h2>Vị trí</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Vị trí</th><th>Phụ trách</th><th>Việc chính</th><th>Review PR của</th></tr></thead>
+    <tbody>
+      <tr><td>Lead, tích hợp</td><td><span class="blank"></span></td><td>Repo, nhánh, model, R2, freeze, release, review</td><td>Mọi PR (cùng 1 người khác)</td></tr>
+      <tr><td>Dev, lưu track</td><td><span class="blank"></span></td><td>Track CVAT, script đo đếm cả track</td><td>Dev, UI duyệt box</td></tr>
+      <tr><td>Dev, UI duyệt box</td><td><span class="blank"></span></td><td>Ghi box bị sửa, UI duyệt, phím tắt</td><td>Dev, lưu track</td></tr>
+      <tr><td>Đo thời gian</td><td><span class="blank"></span></td><td>R1, dữ liệu đo, điều phối đo, tổng hợp số</td><td>Demo, tài liệu</td></tr>
+      <tr><td>Demo, tài liệu</td><td><span class="blank"></span></td><td>Hướng dẫn cài, demo, README, nhật ký tuần</td><td>Đo thời gian</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">Cả 5 người đều làm người đo. Ai đã quen tool thì không đo phần làm tay.</p>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">4</span><h2>Lịch theo ngày</h2></div>
+  <figure class="diagram"><pre class="mermaid">
+gantt
+  title calib-overlay v0.19.0 đến v1.0.0
+  dateFormat YYYY-MM-DD
+  axisFormat %d/%m
+  section Mốc
+  Họp chốt C1-C5                 :milestone, m0, 2026-10-12, 0d
+  Release v0.19.1 bản đo lần 1   :milestone, m1, 2026-10-15, 0d
+  Code freeze v1.0.0-rc.1        :milestone, m2, 2026-10-19, 0d
+  Release v1.0.0                 :milestone, m3, 2026-10-24, 0d
+  Demo                           :milestone, m4, 2026-10-25, 0d
+  section Lead
+  T01 Đưa code vào P-009         :t01, 2026-10-12, 1d
+  T03 Bảng việc                  :t03, 2026-10-12, 1d
+  T02 Script tải model           :t02, 2026-10-13, 2d
+  T25 R2 làm nhẹ mô hình nếu cần :t25, 2026-10-20, 2d
+  section Dev, lưu track
+  T04 Tìm hiểu track CVAT        :t04, 2026-10-12, 2d
+  T05 Lưu track                  :crit, t05, 2026-10-13, 5d
+  T07 Test cho track             :t07, 2026-10-17, 3d
+  T08 Script đo đếm cả track     :crit, t08, 2026-10-19, 1d
+  section Dev, UI duyệt box
+  T11 Kiểm tra trùng phím        :t11, 2026-10-12, 1d
+  T09 Ghi box bị sửa             :crit, t09, 2026-10-13, 3d
+  T10 Tỉ lệ box phải sửa         :t10, 2026-10-14, 1d
+  T12 UI duyệt                   :t12, 2026-10-15, 3d
+  T13 Bảng tra phím tắt          :t13, 2026-10-17, 3d
+  section Đo thời gian
+  T16 Chốt luật gán              :t16, 2026-10-12, 1d
+  T14 R1 thiết kế thí nghiệm     :t14, 2026-10-13, 2d
+  T15 Chuẩn bị dữ liệu đo        :t15, 2026-10-13, 2d
+  T17 Đo thử                     :t17, 2026-10-15, 1d
+  T18 Đo lần 1                   :crit, t18, 2026-10-16, 2d
+  T19 Đo lần 2                   :crit, t19, 2026-10-20, 3d
+  T20 Tổng hợp kết quả           :t20, 2026-10-22, 2d
+  section Demo, tài liệu
+  T21 Hướng dẫn cài và dùng      :t21, 2026-10-12, 3d
+  T22 Kịch bản demo, slide       :t22, 2026-10-19, 5d
+  T23 Cập nhật tài liệu          :t23, 2026-10-23, 2d
+  T24 Diễn tập demo              :t24, 2026-10-24, 1d
+</pre><figcaption>Gantt 12/10 – 25/10, việc tô đỏ là việc trên đường găng</figcaption></figure>
+  <div class="tbl"><table class="sched">
+    <thead><tr><th>Ngày</th><th class="c-lead">Lead</th><th class="c-track">Dev, lưu track</th><th class="c-ui">Dev, UI duyệt box</th><th class="c-test">Đo thời gian</th><th class="c-docs">Demo, tài liệu</th></tr></thead>
+    <tbody>
+      <tr class="key"><td>T2 12/10</td><td>Họp chốt; T01, T03</td><td>T04</td><td>T11</td><td>T16</td><td>T21</td></tr>
+      <tr><td>T3 13/10</td><td>T02</td><td>T04, T05</td><td>T09</td><td>T14, T15</td><td>T21</td></tr>
+      <tr><td>T4 14/10</td><td>T02, review</td><td>T05</td><td>T09, T10</td><td>T14, T15</td><td>T21 xong; cài cho người đo</td></tr>
+      <tr><td>T5 15/10</td><td>Release <code>v0.19.1</code> (bản đo lần 1)</td><td>T05</td><td>T09 xong; T12</td><td>T17 đo thử</td><td>Người đo thử</td></tr>
+      <tr class="key"><td>T6 16/10</td><td><b>Đo lần 1</b></td><td>T05</td><td>T12</td><td><b>T18 đo lần 1</b></td><td>Người đo</td></tr>
+      <tr class="key"><td>T7 17/10</td><td><b>Đo lần 1</b>; quyết định R2</td><td>T05, T07</td><td>T12, T13</td><td>T18; tổng hợp lần 1</td><td>Người đo</td></tr>
+      <tr class="rest"><td>CN 18/10</td><td colspan="5">Bù việc trễ</td></tr>
+      <tr class="key"><td>T2 19/10</td><td><b>T26 code freeze</b> <code>v1.0.0-rc.1</code></td><td>T07, T08 xong</td><td>T13 xong</td><td>Chuẩn bị tập frame lần 2</td><td>T22 bắt đầu</td></tr>
+      <tr><td>T3 20/10</td><td>T25 (nếu cần), sửa lỗi rc</td><td><code>fix/*</code></td><td><code>fix/*</code></td><td><b>T19 đo lần 2</b></td><td>Người đo</td></tr>
+      <tr><td>T4 21/10</td><td>T25</td><td><code>fix/*</code></td><td><code>fix/*</code></td><td><b>T19</b></td><td>Người đo; T22</td></tr>
+      <tr><td>T5 22/10</td><td>Review</td><td></td><td></td><td><b>T19</b>, T20</td><td>T22</td></tr>
+      <tr><td>T6 23/10</td><td>Review README</td><td></td><td></td><td>T20 xong</td><td>T22, T23</td></tr>
+      <tr class="key"><td>T7 24/10</td><td><b>T27 release</b> <code>v1.0.0</code></td><td>T24 diễn tập</td><td>T24</td><td>T24</td><td>T23 xong; T24</td></tr>
+      <tr class="key"><td>CN 25/10</td><td colspan="5"><b>Demo</b></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">5</span><h2>Danh sách việc</h2></div>
+  <p class="small muted">Mỗi việc là một issue trên GitHub, một nhánh, một PR vào <code>dev</code>. Giờ là giờ làm ước lượng.</p>
+  <figure class="diagram"><pre class="mermaid">
+flowchart LR
+  C2(["C2 nơi lưu model"]) --&gt; T01 --&gt; T02
+  C5(["C5 nơi lưu cờ đã sửa"]) --&gt; T09 --&gt; T10
+  C3(["C3 cảnh đo"]) --&gt; T15
+  C4(["C4 shape cũ"]) --&gt; T06
+  T04 --&gt; T05 --&gt; T07
+  T05 --&gt; T08
+  T05 --&gt; T06
+  T02 --&gt; V1[["v0.19.1"]]
+  T09 --&gt; V1
+  T14 --&gt; T17
+  T15 --&gt; T17
+  T16 --&gt; T17
+  T21 --&gt; T17
+  V1 --&gt; T17 --&gt; T18
+  T18 --&gt; Q{"Họp 17/10&lt;br/&gt;MTrans chậm?"}
+  Q --&gt;|"có"| T25
+  T07 --&gt; T26[["T26 code freeze"]]
+  T08 --&gt; T26
+  T10 --&gt; T26
+  T26 --&gt; T19 --&gt; T20
+  T20 --&gt; T22
+  T20 --&gt; T23
+  T23 --&gt; T27[["T27 release v1.0.0"]]
+  T22 --&gt; T24
+  T27 --&gt; T24 --&gt; DEMO(["Demo 25/10"])
+</pre><figcaption>Việc nào phải xong trước việc nào</figcaption></figure>
+
+  <div class="pos lead">
+    <div class="pos-head"><h3>Lead, tích hợp</h3><span class="who">Phụ trách: —</span></div>
+    <div class="tasks">
+      <div class="task"><div class="top"><span class="id">T01</span><span class="name">Đưa code extension vào P-009</span></div>
+        <div class="facts"><code>chore/import-extension</code><span>3 h</span><span>cần: C2</span></div>
+        <ol><li>Tạo <code>dev</code> từ <code>main</code>, bật branch protection cho cả hai</li><li><code>extension/models/*.onnx</code> vào <code>.gitignore</code>; không lọt dữ liệu, <code>work/</code>, <code>.venv/</code></li><li>PR <code>source-tool/calib-overlay/</code> vào <code>dev</code>; test pass</li><li>Release <code>dev</code> → <code>main</code>, tag <code>v0.19.0</code></li></ol>
+        <div class="done"><b>Xong khi:</b> người khác clone, chạy test pass; repo không có file trên 10 MB</div></div>
+      <div class="task"><div class="top"><span class="id">T02</span><span class="name">Script tải model</span></div>
+        <div class="facts"><code>feature/model-download</code><span>4 h</span><span>cần: T01</span></div>
+        <ol><li>Đưa 6 file ONNX lên nơi đã chốt (C2), ghi kích thước và SHA-256</li><li>Script tải về <code>extension/models/</code>, kiểm checksum, báo lỗi rõ</li><li>Ghi cách kiểm WebGPU; không có thì dùng Frustum PointNet</li></ol>
+        <div class="done"><b>Xong khi:</b> máy sạch chạy script → extension nạp đủ model</div></div>
+      <div class="task"><div class="top"><span class="id">T03</span><span class="name">Bảng việc</span></div>
+        <div class="facts"><span>1 h</span></div>
+        <ul><li>Issue cho từng T, nhãn theo vị trí, GitHub Projects 3 cột</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T25</span><span class="name">R2: làm nhẹ mô hình</span></div>
+        <div class="facts"><code>docs/model-lite-research</code><span>8 h</span><span>chỉ làm nếu MTrans chậm ở đo lần 1</span></div>
+        <ul><li>Xem mục 7</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T26</span><span class="name">Code freeze · 19/10</span></div>
+        <div class="facts"><span>1 h</span></div>
+        <ul><li>T05, T07, T08, T09, T10 đã vào <code>dev</code>; tag <code>v1.0.0-rc.1</code>; sau đó chỉ nhận <code>fix/*</code></li></ul></div>
+      <div class="task"><div class="top"><span class="id">T27</span><span class="name">Release · 24/10</span></div>
+        <div class="facts"><span>1 h</span></div>
+        <ul><li>PR <code>dev</code> → <code>main</code> (merge commit), tag <code>v1.0.0</code>, kiểm bản tag chạy được luồng demo</li></ul></div>
+    </div>
+  </div>
+
+  <div class="pos track">
+    <div class="pos-head"><h3>Dev, lưu track</h3><span class="who">Phụ trách: —</span></div>
+    <div class="tasks">
+      <div class="task"><div class="top"><span class="id">T04</span><span class="name">Tìm hiểu track CVAT</span></div>
+        <div class="facts"><span>3 h</span></div>
+        <ol><li>Đọc <code>extension/cvat.js</code> (đoạn <code>patch('create', …)</code> gửi <code>tracks: []</code>) và <code>propagate.js</code></li><li>Tạo track cuboid bằng tay, xem JSON <code>GET /jobs/&lt;id&gt;/annotations</code></li><li>Ghi định dạng track, cách thêm keyframe</li></ol>
+        <div class="done"><b>Xong khi:</b> có JSON mẫu tạo track và thêm keyframe chạy được</div></div>
+      <div class="task"><div class="top"><span class="id">T05</span><span class="name">Lưu box lan qua frame thành track</span><span class="must">bắt buộc</span></div>
+        <div class="facts"><code>feature/cvat-track</code><span>10 h</span><span>cần: T04</span></div>
+        <ol><li>Box mới → track mới</li><li>Lan bằng L / Shift+L → thêm keyframe vào track của box nguồn</li><li>Sửa / xoá → sửa / đánh <code>outside</code> keyframe</li><li>Outbox và Ctrl+Z vẫn chạy</li></ol>
+        <div class="done"><b>Xong khi:</b> lan 1 xe qua 5 frame → 1 track, cùng ID trên 5 frame</div></div>
+      <div class="task"><div class="top"><span class="id">T06</span><span class="name">Shape cũ</span></div>
+        <div class="facts"><span>3 h</span><span>cần: C4</span></div>
+        <ul><li>Chuyển: script gom shape cũ thành track. Không chuyển: ghi giới hạn vào README</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T07</span><span class="name">Test cho track</span></div>
+        <div class="facts"><span>4 h</span><span>cần: T05</span></div>
+        <ul><li>Test tự động trong <code>tests/</code> cho payload track; checklist test tay trên CVAT local</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T08</span><span class="name">Script đo đếm cả cuboid trong track</span><span class="must">trước đo lần 2</span></div>
+        <div class="facts"><span>2 h</span><span>cần: T05</span></div>
+        <ul><li><code>time_study.py</code> hiện chỉ đếm <code>shapes</code>; sau T05 box nằm trong <code>tracks</code> sẽ bị bỏ sót</li></ul>
+        <div class="done"><b>Xong khi:</b> phiên đo trên bản rc đếm đúng số cuboid</div></div>
+    </div>
+  </div>
+
+  <div class="pos ui">
+    <div class="pos-head"><h3>Dev, UI duyệt box</h3><span class="who">Phụ trách: —</span></div>
+    <div class="tasks">
+      <div class="task"><div class="top"><span class="id">T09</span><span class="name">Ghi box bị sửa</span><span class="must">trước đo lần 1</span></div>
+        <div class="facts"><code>feature/review-ui</code><span>6 h</span><span>cần: C5</span></div>
+        <ol><li>Lúc lưu, so box đề xuất với box được lưu; lệch quá ngưỡng = "đã sửa"</li><li>Ghi cách tạo: vẽ tay hay T / Shift+T, mô hình nào</li><li>Lưu theo cách đã chốt (C5)</li></ol>
+        <div class="done"><b>Xong khi:</b> thử 10 box, sửa 3 → đọc ra đúng 3 / 10</div></div>
+      <div class="task"><div class="top"><span class="id">T10</span><span class="name">% box phải sửa trong báo cáo đo</span></div>
+        <div class="facts"><span>2 h</span><span>cần: T09</span></div>
+        <ul><li><code>time_study.py report</code> thêm cột % box phải sửa</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T11</span><span class="name">Kiểm tra trùng phím với CVAT</span></div>
+        <div class="facts"><span>2 h</span></div>
+        <ul><li>So phím extension (N/B, D/F, H, G, V, L, T, R, S, A…) với phím CVAT trên job 3D; đề xuất đổi</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T12</span><span class="name">UI duyệt</span></div>
+        <div class="facts"><span>6 h</span></div>
+        <ul><li>Thanh tiến độ khi duyệt sau T / Shift+T ("3 / 12 box")</li><li>Chỉ báo trạng thái lưu cố định: chờ gửi / lỗi / đã lưu</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T13</span><span class="name">Bảng tra phím tắt</span></div>
+        <div class="facts"><span>3 h</span></div>
+        <ul><li>Mở bằng <code>?</code>, đủ phím, kể cả phím đổi ở T11</li></ul></div>
+    </div>
+  </div>
+
+  <div class="pos test">
+    <div class="pos-head"><h3>Đo thời gian</h3><span class="who">Phụ trách: —</span></div>
+    <div class="tasks">
+      <div class="task"><div class="top"><span class="id">T14</span><span class="name">R1: thiết kế thí nghiệm</span></div>
+        <div class="facts"><code>docs/time-study-design</code><span>4 h</span><span>hạn 14/10</span></div>
+        <ul><li>Bản đề xuất ở mục 6; chốt số người, số frame, thứ tự, cách báo kết quả</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T15</span><span class="name">Chuẩn bị dữ liệu đo</span></div>
+        <div class="facts"><span>5 h</span><span>cần: C3</span></div>
+        <ol><li>Chuyển cảnh bằng <code>nuscenes_to_cvat.py</code>; chọn tập A, B (lần 1) và C, D (lần 2)</li><li>Cảnh làm quen, ví dụ 0061</li><li>Task trên CVAT local từng máy bằng <code>cvat_upload.py</code>: mỗi người 1 job tay, 1 job tool</li></ol>
+        <div class="done"><b>Xong khi:</b> mỗi người mở được job, extension tự nhận calib</div></div>
+      <div class="task"><div class="top"><span class="id">T16</span><span class="name">Chốt luật gán trước khi đo</span></div>
+        <div class="facts"><span>2 h</span></div>
+        <ul><li>P-011, P-013 ra họp, ghi QĐ; chốt lớp được đo (đề xuất: chỉ <code>car</code>)</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T17</span><span class="name">Đo thử · 15/10</span></div>
+        <div class="facts"><span>2 h</span></div>
+        <ul><li>1 người: 1 frame tay + 1 frame tool; sửa quy trình; ước lại số frame</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T18 · T19</span><span class="name">Đo lần 1 · Đo lần 2</span></div>
+        <div class="facts"><span>16–17/10 (v0.19.1) · 20–22/10 (rc)</span><span>2 h / người đo</span></div>
+        <ul><li>Theo mục 6; gom file phiên từ <code>work/time-study/</code> từng máy</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T20</span><span class="name">Tổng hợp kết quả</span></div>
+        <div class="facts"><span>4 h</span><span>hạn 23/10</span></div>
+        <ul><li>Bảng mẫu mục 6; ghi số người, số frame, số cuboid, trung vị và khoảng</li></ul></div>
+    </div>
+  </div>
+
+  <div class="pos docs">
+    <div class="pos-head"><h3>Demo, tài liệu</h3><span class="who">Phụ trách: —</span></div>
+    <div class="tasks">
+      <div class="task"><div class="top"><span class="id">T21</span><span class="name">Hướng dẫn cài và dùng</span></div>
+        <div class="facts"><code>docs/install-guide</code><span>5 h</span><span>hạn 14/10</span></div>
+        <ul><li>CVAT local, extension, tải model, mở job 3D, luồng vẽ → duyệt → lưu, lỗi hay gặp</li></ul>
+        <div class="done"><b>Xong khi:</b> người chưa cài lần nào làm theo được mà không cần hỏi</div></div>
+      <div class="task"><div class="top"><span class="id">T22</span><span class="name">Kịch bản demo và slide</span></div>
+        <div class="facts"><code>docs/demo</code><span>6 h</span></div>
+        <ul><li>5–7 phút: vấn đề (71–128 phút / frame làm tay ở tuần 03), luồng MVP chạy thật, bảng kết quả, giới hạn</li><li>Video dự phòng nếu demo trực tiếp lỗi</li></ul></div>
+      <div class="task"><div class="top"><span class="id">T23</span><span class="name">Cập nhật tài liệu</span></div>
+        <div class="facts"><span>3 h</span></div>
+        <ul><li>README tool, nhật ký tuần 05 và 06, QĐ mới trong <code>so-quyet-dinh.md</code></li></ul></div>
+      <div class="task"><div class="top"><span class="id">T24</span><span class="name">Diễn tập demo · 24/10</span></div>
+        <div class="facts"><span>cả nhóm</span><span>1 h</span></div>
+        <ul><li>Chạy lại toàn bộ kịch bản trên bản tag</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">6</span><h2>Thí nghiệm đo (đề xuất cho R1)</h2></div>
+  <p>Câu hỏi: dùng tool thì mỗi cuboid nhanh hơn bao nhiêu so với làm tay trên CVAT, với chất lượng box ra sao.</p>
+  <div class="scope">
+    <div class="tbl"><table>
+      <thead><tr><th>Người đo</th><th>Phiên 1</th><th>Phiên 2</th></tr></thead>
+      <tbody>
+        <tr><td>Người đo 1</td><td>Tay · tập A</td><td>Tool · tập B</td></tr>
+        <tr><td>Người đo 2</td><td>Tool · tập B</td><td>Tay · tập A</td></tr>
+        <tr><td>Người đo 3</td><td>Tay · tập B</td><td>Tool · tập A</td></tr>
+        <tr><td>Người đo 4</td><td>Tool · tập A</td><td>Tay · tập B</td></tr>
+      </tbody>
+    </table></div>
+    <div class="box">
+      <h3>Vì sao bố trí thế này</h3>
+      <ul>
+        <li>Mỗi tập frame được làm cả tay lẫn tool</li>
+        <li>Mỗi cách được làm trước và sau như nhau → bớt lệch do quen cảnh, do frame dễ / khó</li>
+        <li>Không ai làm cùng một tập hai lần</li>
+        <li>Lần 2 dùng tập C, D mới, cùng cách bố trí</li>
+        <li>Người viết tool chỉ đo phần tool, ghi riêng</li>
+      </ul>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Quy trình một phiên</h3>
+    <ol>
+      <li>Trước buổi đo: làm quen tool 15 phút trên cảnh làm quen, không bấm giờ</li>
+      <li><code>time_study.py run --mode manual|tool --job &lt;job&gt; --frames &lt;tập&gt; --scene &lt;cảnh&gt; --note "&lt;người đo, phiên&gt;"</code></li>
+      <li>Enter bắt đầu; gán mọi <code>car</code> thấy được, chất lượng như giao thật; Enter khi đã lưu box cuối</li>
+      <li>Nghỉ 10 phút giữa hai phiên</li>
+      <li>Không giúp người đang đo; ghi lại nếu tool lỗi (lỗi gì, mất bao lâu)</li>
+    </ol>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Bảng kết quả (mẫu)</th><th>Làm tay</th><th>Dùng tool</th><th>Chênh</th></tr></thead>
+    <tbody>
+      <tr><td>Giây / cuboid (trung vị, khoảng)</td><td></td><td></td><td></td></tr>
+      <tr><td>IoU 3D trung vị · % ≥ 0,5 · % ≥ 0,7</td><td></td><td></td><td></td></tr>
+      <tr><td>Sai số yaw trung vị (360°)</td><td></td><td></td><td></td></tr>
+      <tr><td>Recall (xe có ≥ 10 điểm LiDAR)</td><td></td><td></td><td></td></tr>
+      <tr><td>% box phải sửa</td><td>—</td><td></td><td></td></tr>
+      <tr><td>Số người · số frame · số cuboid</td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">7</span><h2>Research</h2></div>
+  <div class="scope">
+    <div class="box">
+      <h3>R1 · Thiết kế thí nghiệm đo thời gian</h3>
+      <p class="small muted">Đo thời gian · T14</p>
+      <ul>
+        <li>Tìm cách các bài về công cụ gán nhãn bán tự động đo thời gian người: đổi chéo, làm quen trước, báo trung vị</li>
+        <li>Mỗi phiên không quá ~60 phút; làm tay ở tuần 03 mất 71–128 phút / frame mọi lớp, nên dùng đo thử T17 để định số frame</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>R2 · Làm nhẹ mô hình trong trình duyệt</h3>
+      <p class="small muted">Lead · T25 · sau đo lần 1</p>
+      <ul>
+        <li>Chỉ làm nếu MTrans (84 MB, ~70 ms / xe trên WebGPU) làm người đo phải chờ</li>
+        <li>Thử lượng tử hoá ONNX (fp16, int8); đo lại kích thước, tốc độ, IoU 3D trên 0103 / 0916 bằng <code>eval_boxes.js</code> + <code>metrics.py</code></li>
+        <li>Phương án lùi: Frustum PointNet (3,6 MB), rồi gom cụm hình học</li>
+        <li>Chỉ đưa vào release nếu IoU 3D giảm không quá 1 điểm phần trăm</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">8</span><h2>Rủi ro</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Rủi ro</th><th>Dấu hiệu</th><th>Cách xử lý</th></tr></thead>
+    <tbody>
+      <tr><td>Máy người đo không chạy nổi CVAT local hoặc không có WebGPU</td><td>T21 cài không được</td><td>Đo trên máy mạnh nhất, lần lượt từng người; không WebGPU thì dùng Frustum PointNet, ghi rõ</td></tr>
+      <tr><td>Làm tay quá lâu, không đủ thời gian đo</td><td>Đo thử T17 &gt; 60 phút / phiên</td><td>Giảm số frame mỗi tập, giữ đổi chéo</td></tr>
+      <tr><td>Lưu track (T05) trễ</td><td>Chưa xong 17/10</td><td>Bản rc vẫn lưu shape; lưu track sang sau demo, ghi giới hạn</td></tr>
+      <tr><td>Lưu track làm script đo đếm sai</td><td>Số cuboid phiên = 0 hoặc thiếu</td><td>T08 bắt buộc trước đo lần 2</td></tr>
+      <tr><td>Số IoU lạc quan</td><td>Mô hình chọn theo chính 0103 / 0916</td><td>Ghi rõ trong bảng; nếu kịp, đo thêm 1 cảnh khác</td></tr>
+      <tr><td>Luật gán chưa thống nhất</td><td>P-011, P-013 còn mở</td><td>T16 trước đo thử</td></tr>
+      <tr><td>Model 123 MB không vào được git</td><td>Push bị từ chối hoặc repo nặng</td><td>T01 loại model khỏi git, T02 tải bằng script</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">9</span><h2>Họp và báo cáo</h2></div>
+  <div class="box"><ul>
+    <li>Họp nhanh 15 phút mỗi tối (T2–T6): xong gì, làm gì tiếp, vướng gì</li>
+    <li>Họp chốt: <b>12/10</b> (phân công, C1–C5) · <b>17/10</b> (kết quả đo lần 1, quyết định R2) · <b>23/10</b> (kết quả cuối, kịch bản demo)</li>
+    <li>Tiến độ theo GitHub Projects; nhật ký tuần trong <code>nhat-ky-tuan/</code></li>
+  </ul></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">10</span><h2>Git</h2></div>
+  <figure class="diagram"><pre class="mermaid">
+gitGraph
+  commit id: "init"
+  branch dev
+  checkout dev
+  branch chore/import-extension
+  commit id: "import extension"
+  checkout dev
+  merge chore/import-extension
+  checkout main
+  merge dev tag: "v0.19.0"
+  checkout dev
+  branch feature/review-ui
+  commit id: "log edits"
+  checkout dev
+  branch feature/model-download
+  commit id: "model script"
+  checkout dev
+  merge feature/model-download
+  merge feature/review-ui
+  checkout main
+  merge dev tag: "v0.19.1"
+  checkout dev
+  branch feature/cvat-track
+  commit id: "save tracks"
+  commit id: "count tracks"
+  checkout dev
+  merge feature/cvat-track tag: "v1.0.0-rc.1"
+  branch fix/rc-bugs
+  commit id: "fix rc"
+  checkout dev
+  merge fix/rc-bugs
+  checkout main
+  merge dev tag: "v1.0.0"
+</pre><figcaption>Luồng nhánh: nhánh việc → dev (squash) → main (merge commit + tag)</figcaption></figure>
+  <div class="box small"><ul>
+    <li>Mỗi việc một nhánh tách từ <code>dev</code>: <code>feature/</code>, <code>fix/</code>, <code>refactor/</code>, <code>docs/</code>, <code>test/</code>, <code>chore/</code></li>
+    <li>Trước khi push: <code>git merge origin/dev</code>, chạy <code>for t in tests/*.test.js; do node $t; done</code></li>
+    <li>Không push thẳng <code>main</code> / <code>dev</code>; không tự approve PR của mình; xoá nhánh sau khi merge</li>
+    <li>Model ONNX không commit vào git; tải bằng script</li>
+  </ul></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Scope</th><th>Phần code</th><th>Ví dụ commit</th></tr></thead>
+    <tbody>
+      <tr><td><code>track</code></td><td>Lưu box thành track CVAT</td><td><code>feat(track): save propagated boxes as CVAT tracks</code></td></tr>
+      <tr><td><code>review</code></td><td>Duyệt box, ghi box bị sửa</td><td><code>feat(review): log edits before saving proposals</code></td></tr>
+      <tr><td><code>save</code></td><td>Hàng đợi lưu lên CVAT</td><td><code>fix(save): retry outbox after network error</code></td></tr>
+      <tr><td><code>ui</code></td><td>Panel, phím tắt, CSS</td><td><code>style(ui): align box list columns</code></td></tr>
+      <tr><td><code>model</code></td><td>MTrans, Frustum PointNet, YOLOX, tải model</td><td><code>perf(model): quantize mtrans to int8</code></td></tr>
+      <tr><td><code>time-study</code></td><td>Script và quy trình đo</td><td><code>test(time-study): count cuboids inside tracks</code></td></tr>
+      <tr><td><code>docs</code></td><td>README, hướng dẫn, kết quả</td><td><code>docs: add install guide for annotators</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="n">11</span><h2>Cần chốt (họp 12/10)</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Mã</th><th>Câu hỏi</th><th>Ảnh hưởng tới</th></tr></thead>
+    <tbody>
+      <tr><td>C1</td><td>Ai giữ vị trí nào</td><td>Tất cả</td></tr>
+      <tr><td>C2</td><td>Lưu model 123 MB ở đâu: GitHub Release, Drive hay Git LFS</td><td>T01, T02</td></tr>
+      <tr><td>C3</td><td>Cảnh đo: 0916 hay 0103</td><td>T15</td></tr>
+      <tr><td>C4</td><td>Shape cũ trong CVAT có chuyển sang track không</td><td>T06</td></tr>
+      <tr><td>C5</td><td>Lưu cờ "box đã sửa" ở đâu: thuộc tính shape trong CVAT hay file log của extension</td><td>T09, T10</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</div>
+
+</body>
+</html>

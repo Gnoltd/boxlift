@@ -1,0 +1,35 @@
+/* lab.css — Calib Lab: token và thành phần chung nằm ở boxlift.css. Vùng ảnh / point cloud luôn tối ở cả hai theme. */
+#frame { width: 260px; }
+.layout { display: grid; grid-template-columns: 1fr 320px; height: calc(100% - 52px); }
+.stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.viewport { position: relative; flex: 1; min-height: 0; background: #08090c; overflow: hidden; cursor: grab; }
+.viewport.drag { cursor: grabbing; }
+#main { position: absolute; inset: 0; width: 100%; height: 100%; }
+.empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px; color: var(--text); }
+.empty[hidden] { display: none; }
+.hud { position: absolute; left: 10px; bottom: 8px; background: rgba(0,0,0,.6); color: #e9edf2; padding: 3px 8px; border-radius: 4px; }
+.thumbs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; padding: 6px; border-top: 1px solid var(--line); background: var(--surface); }
+.thumb { position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: #000; }
+.thumb.active { border-color: var(--accent); }
+.thumb canvas { display: block; width: 100%; height: auto; }
+.thumb span { position: absolute; left: 4px; top: 2px; font-size: 10px; background: rgba(0,0,0,.65); color: #e9edf2; padding: 0 4px; border-radius: 3px; }
+.thumb .flag { left: auto; right: 4px; color: var(--box3d); }
+.panel { border-left: 1px solid var(--line); background: var(--surface); padding: 14px 16px; overflow: auto; }
+.panel h2 { margin: 0 0 2px; font-size: 15px; line-height: 22px; font-weight: 650; }
+.panel h3 { margin: 18px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--text-2); }
+.panel p { margin: 0 0 6px; }
+.sliders { display: grid; gap: 6px; }
+.sl { display: grid; grid-template-columns: 54px 1fr 64px; align-items: center; gap: 6px; }
+.sl input[type=number] { width: 64px; padding: 2px 4px; font: 12px var(--mono); }
+.row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.opt { display: grid; grid-template-columns: 1fr 110px; align-items: center; gap: 6px; margin: 6px 0; }
+.opt.chk { display: flex; gap: 8px; }
+.keys { padding-left: 16px; margin: 0; }
+.keys li { margin: 4px 0; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .viewport { flex: none; height: 60vh; }
+  .thumbs { grid-template-columns: repeat(4, 1fr); }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  #frame { width: 140px; }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BoxLift · Calib Lab</title>
+<link rel="stylesheet" href="boxlift.css">
+<link rel="stylesheet" href="lab.css">
+</head>
+<body data-title="lab.title">
+<header class="bar">
+  <span class="brand"><img src="../assets/Logo/boxlift-mark.svg" alt="">BoxLift<span class="sub" data-i18n="lab.title"></span></span>
+  <label class="btn primary"><span data-i18n="lab.pick"></span>
+    <input id="dir" type="file" webkitdirectory multiple hidden>
+  </label>
+  <label class="btn"><span data-i18n="lab.load"></span>
+    <input id="calibFile" type="file" accept=".json,application/json" hidden>
+  </label>
+  <button id="export" class="btn" data-i18n="lab.export"></button>
+  <span id="calibInfo" class="muted"></span>
+  <span class="spacer"></span>
+  <button id="prev" class="btn icon" data-i18n-title="lab.prev">‹</button>
+  <input id="frame" type="range" min="0" max="0" value="0">
+  <button id="next" class="btn icon" data-i18n-title="lab.next">›</button>
+  <span id="frameLabel" class="mono muted" data-i18n="lab.nodata"></span>
+  <div class="lang" role="group" aria-label="Language"><button data-lang="vi">VI</button><button data-lang="en">EN</button></div>
+</header>
+
+<main class="layout">
+  <section class="stage">
+    <div class="viewport" id="viewport">
+      <canvas id="main"></canvas>
+      <div id="empty" class="empty">
+        <p><span data-i18n="lab.empty.pre"></span><code>pointcloud/</code><span data-i18n="lab.empty.mid"></span><code>related_images/</code><span data-i18n="lab.empty.post"></span></p>
+        <p class="muted" data-i18n="lab.empty.private"></p>
+      </div>
+      <div class="hud mono" id="hud"></div>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </section>
+
+  <aside class="panel">
+    <h2 id="camTitle" data-i18n="lab.cam"></h2>
+    <p id="camMeta" class="muted mono"></p>
+
+    <h3><span data-i18n="lab.manual"></span> <span class="muted" data-i18n="lab.manual.sub"></span></h3>
+    <div class="sliders" id="sliders"></div>
+    <div class="row">
+      <button id="resetCam" class="btn" data-i18n="lab.reset.cam"></button>
+      <button id="resetAll" class="btn" data-i18n="lab.reset.all"></button>
+    </div>
+
+    <h3 data-i18n="lab.view"></h3>
+    <label class="opt"><span data-i18n="lab.ptsize"></span> <input id="ptSize" type="range" min="1" max="5" value="2"></label>
+    <label class="opt"><span data-i18n="lab.alpha"></span> <input id="alpha" type="range" min="10" max="100" value="80"></label>
+    <label class="opt"><span data-i18n="lab.range"></span> <input id="maxRange" type="range" min="10" max="100" value="40"></label>
+    <label class="opt chk"><input id="hideGround" type="checkbox"> <span data-i18n="lab.ground"></span></label>
+    <label class="opt chk"><input id="showPts" type="checkbox" checked> <span><span data-i18n="lab.showpts.pre"></span><kbd>H</kbd><span data-i18n="lab.showpts.post"></span></span></label>
+
+    <h3 data-i18n="lab.keys"></h3>
+    <ul class="keys muted">
+      <li><kbd>←</kbd><kbd>→</kbd> pan · <kbd>↑</kbd><kbd>↓</kbd> tilt · <kbd>Q</kbd><kbd>E</kbd> roll <span data-i18n="lab.keys.step"></span></li>
+      <li><kbd>,</kbd><kbd>.</kbd> <span data-i18n="lab.keys.frame"></span> · <kbd>1</kbd>–<kbd>8</kbd> <span data-i18n="lab.keys.cam"></span></li>
+      <li data-i18n="lab.keys.mouse"></li>
+    </ul>
+  </aside>
+</main>
+<script src="../function/i18n.js"></script>
+<script src="page-i18n.js"></script>
+<script src="../function/projection.js"></script>
+<script src="../function/pcd.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>

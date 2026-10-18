@@ -1,0 +1,9 @@
+{
+  "name": "calib-overlay",
+  "private": true,
+  "description": "Dev tooling only: unit tests run with plain node; e2e drives Chromium with the extension on a local CVAT.",
+  "scripts": {
+    "test": "for t in tests/*.test.js; do node $t || exit 1; done",
+    "pack": "node tools/pack.js"
+  }
+}

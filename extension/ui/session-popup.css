@@ -1,0 +1,98 @@
+/* session-popup.css — popup Log (Phiên / Dashboard) trong cửa sổ BoxLift.
+   Mount trong shadow root của cửa sổ BoxLift nên dùng token khai ở :host của cvat.js (tối mặc định, sáng theo data-theme).
+   Chỉ nền mờ phía sau luôn tối ở cả hai theme; còn lại không ghi màu lẻ. */
+.sess-modal-backdrop {
+  position: fixed; inset: 0; z-index: 2147483050;
+  background: rgba(6, 8, 12, 0.72); backdrop-filter: blur(4px);
+  display: grid; place-items: center;
+  font: 13px/20px Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+}
+.sess-modal {
+  width: min(1040px, 94vw); max-height: min(820px, 92vh);
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: 0 20px 60px var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sess-hd { display: flex; align-items: center; gap: 12px; padding: 0 12px 0 16px; min-height: 52px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.sess-hd .sess-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; line-height: 22px; font-weight: 650; white-space: nowrap; }
+.sess-hd .sess-brand img { width: 22px; height: 22px; display: block; }
+.sess-hd .sess-brand .sub { font-weight: 500; color: var(--muted); }
+.sess-hd .sess-brand .sub::before { content: "/"; margin: 0 8px 0 2px; color: var(--line-hi); }
+.sess-hd .sess-sp { flex: 1; }
+.sess-ic { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: var(--r); border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer; }
+.sess-ic:hover { color: var(--text); border-color: var(--line); background: var(--raised); }
+.sess-ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+.sess-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--line); padding: 0 12px; gap: 4px; }
+.sess-tab-btn { padding: 10px 14px 8px; background: none; color: var(--muted); border: 0; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; font-weight: 600; font-size: 13px; }
+.sess-tab-btn:hover { color: var(--text); }
+.sess-tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.sess-body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; scrollbar-color: var(--line-hi) transparent; }
+
+/* KPI */
+.sess-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.sess-kpi-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.sess-kpi-card .sess-kpi-title { font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; }
+.sess-kpi-card .sess-kpi-val { font: 700 22px/28px var(--mono); color: var(--text); }
+.sess-kpi-card .sess-kpi-sub { font-size: 11.5px; line-height: 16px; color: var(--muted); }
+.sess-kpi-card.highlight { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+.sess-kpi-card.highlight .sess-kpi-val { color: var(--ok); }
+
+/* Sections */
+.sess-section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; }
+.sess-section-hd { font-weight: 650; font-size: 13px; margin-bottom: 12px; color: var(--text); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sess-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 780px) { .sess-chart-row { grid-template-columns: 1fr; } }
+.sess-legend { display: inline-flex; gap: 14px; font-size: 11.5px; font-weight: 400; color: var(--text-2); }
+.sess-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.sess-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.sess-dot.manual { background: var(--warn); } .sess-dot.tool { background: var(--accent); }
+.sess-method { display: flex; align-items: center; gap: 20px; }
+.sess-method-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.sess-method-legend > div { display: flex; align-items: center; gap: 8px; }
+
+/* Tables */
+.sess-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.sess-table th { background: var(--raised); padding: 8px 10px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+.sess-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); color: var(--text); }
+.sess-table tr:hover td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.sess-table tr.sess-total td { background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
+.sess-empty-cell { text-align: center; color: var(--muted); padding: 16px !important; }
+.sess-scroll { max-height: 260px; overflow-y: auto; }
+
+/* Helpers */
+.sess-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sess-muted { color: var(--muted); } .sess-ok { color: var(--ok); } .sess-text { color: var(--text); }
+.sess-mono { font-family: var(--mono); }
+.sess-sub { font-size: 12px; color: var(--muted); }
+.sess-meta { display: flex; gap: 16px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.sess-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+.sess-stats small { color: var(--muted); }
+.sess-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.sess-empty { text-align: center; padding: 40px; color: var(--muted); }
+.sess-empty h2 { margin: 0 0 6px; font-size: 15px; line-height: 22px; font-weight: 650; color: var(--text); }
+.sess-detail-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+
+/* Cards & badges */
+.sess-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.sess-card:hover { border-color: var(--line-hi); }
+.sess-card.active-sess { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); background: color-mix(in srgb, var(--ok) 6%, var(--surface)); }
+.sess-badge { display: inline-block; padding: 1px 8px; border-radius: var(--r-sm); font-size: 11.5px; font-weight: 600; border: 1px solid transparent; }
+.sess-badge.ok { background: color-mix(in srgb, var(--ok) 18%, var(--surface)); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--surface)); }
+.sess-badge.warn { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--surface)); }
+.sess-badge.err { background: color-mix(in srgb, var(--err) 18%, var(--surface)); color: var(--err); border-color: color-mix(in srgb, var(--err) 45%, var(--surface)); }
+.sess-badge.muted { background: var(--raised); color: var(--muted); border-color: var(--line); }
+
+/* Buttons */
+.sess-btn { padding: 6px 12px; border-radius: var(--r); border: 1px solid var(--line-hi); background: var(--raised); color: var(--text); cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; }
+.sess-btn:hover { border-color: var(--accent); }
+.sess-btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.sess-btn.pri:hover { background: var(--accent-hi); border-color: var(--accent-hi); }
+.sess-btn.danger { color: var(--err); border-color: color-mix(in srgb, var(--err) 55%, var(--line)); }
+.sess-btn.danger:hover { background: color-mix(in srgb, var(--err) 14%, var(--raised)); border-color: var(--err); }
+.sess-btn.sm { padding: 4px 10px; font-size: 12px; }
+.sess-btn:focus-visible, .sess-tab-btn:focus-visible, .sess-ic:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.sess-filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-bottom: 6px; }
+.sess-filter-bar select, .sess-filter-bar input { padding: 5px 8px; background: var(--raised); border: 1px solid var(--line-hi); border-radius: var(--r); color: var(--text); font-size: 12px; }

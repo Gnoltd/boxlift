@@ -1,0 +1,104 @@
+{
+  "manifest_version": 3,
+  "name": "BoxLift: LiDAR ↔ Camera for CVAT",
+  "version": "1.0.0",
+  "description": "Trên job 3D của CVAT: chiếu point cloud lên các camera, vẽ box 2D ra box 3D, kiểm tra calibration. Kèm calib của nuScenes-mini / KITTI raw, tự chọn theo tên task. Dữ liệu lấy từ CVAT bằng phiên đăng nhập của bạn, không gửi đi nơi khác.",
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://app.cvat.ai/*",
+    "http://localhost:8080/*",
+    "http://127.0.0.1:8080/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.cvat.ai/*",
+        "http://localhost:8080/*",
+        "http://127.0.0.1:8080/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://app.cvat.ai/*",
+        "http://localhost:8080/*",
+        "http://127.0.0.1:8080/*"
+      ],
+      "js": [
+        "function/projection.js",
+        "function/pcd.js",
+        "function/zip.js",
+        "function/boxfit.js",
+        "function/propagate.js",
+        "function/egopath.js",
+        "function/autoodometry.js",
+        "function/poses.js",
+        "function/tracks.js",
+        "function/trajectory.js",
+        "function/i18n.js",
+        "function/labelmap.js",
+        "function/autofilter.js",
+        "function/session.js",
+        "function/supalog.js",
+        "function/editlog.js",
+        "ui/boxviews.js",
+        "ui/handles.js",
+        "function/pairs.js",
+        "function/bridgeclient.js",
+        "function/detect.js",
+        "function/heading.js",
+        "function/frustum.js",
+        "function/mtrans.js",
+        "function/boxtag.js",
+        "function/scan.js",
+        "ui/svg-charts.js",
+        "ui/session-popup.js",
+        "function/compare.js",
+        "function/undo.js",
+        "ui/compare-chip.js",
+        "cvat.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "LiDAR ↔ Camera: cài đặt"
+  },
+  "options_page": "ui/options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ui/detector.html",
+        "ui/logtab.html",
+        "ui/session-popup.css",
+        "assets/Logo/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

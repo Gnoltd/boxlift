@@ -1,0 +1,5 @@
+{
+  "url": "https://YOUR_SUPABASE_PROJECT_ID.supabase.co",
+  "anonKey": "YOUR_SUPABASE_ANON_KEY",
+  "_comment": "Điền URL và Anon Key của dự án Supabase. Khi đóng gói extension phân phát cho annotators, họ chỉ cần cài extension là tự động nhận cấu hình này mà không cần nhập lại."
+}
