@@ -54,6 +54,22 @@ build({ outDir: out2, root: fx });
 const f2 = walk(out2).map((f) => path.relative(out2, f));
 ok('optional inputs copied when present', ['index.html', 'boot.js', 'tour/t.js', 'demo-data/d.json'].every((f) => f2.includes(f)));
 ok('default modelBase is /models/', JSON.parse(fs.readFileSync(path.join(out2, 'build-info.json'), 'utf8')).modelBase === '/models/');
+// calib profiles shipped in web/demo-data/calibs are injected into the dist COPY of calibs/index.json (never the source)
+const srcIdx = fs.readFileSync(path.join(ROOT, 'extension/calibs/index.json'), 'utf8');
+ok('no demo calibs: index.json byte-identical to source', fs.readFileSync(path.join(out2, 'ext/calibs/index.json'), 'utf8') === srcIdx);
+const fx3 = path.join(tmp, 'root3');
+fs.cpSync(fx, fx3, { recursive: true });
+fs.mkdirSync(path.join(fx3, 'web/demo-data/calibs'), { recursive: true });
+fs.writeFileSync(path.join(fx3, 'web/demo-data/calibs/x.json'), '{"cameras":{}}');
+const out3 = path.join(tmp, 'dist3');
+build({ outDir: out3, root: fx3 });
+const idx3 = JSON.parse(fs.readFileSync(path.join(out3, 'ext/calibs/index.json'), 'utf8'));
+const e3 = idx3.profiles.filter((p) => p.id === 'x');
+ok('demo calib: one profile entry appended', e3.length === 1 && e3[0].file === 'x.json' && idx3.profiles[idx3.profiles.length - 1] === e3[0]);
+ok('demo calib: file copied to ext/calibs', fs.existsSync(path.join(out3, 'ext/calibs/x.json')));
+ok('demo calib: source index untouched', fs.readFileSync(path.join(fx3, 'extension/calibs/index.json'), 'utf8') === srcIdx);
+const av = JSON.parse(fs.readFileSync(path.join(outDir, 'ext/calibs/index.json'), 'utf8')).profiles.filter((p) => p.id === 'av2-20dd185d');
+ok('real build: av2 profile exact', av.length === 1 && av[0].match === 'av2|argoverse' && av[0].name === 'Argoverse 2 av2-20dd185d' && av[0].dataset === 'Argoverse 2 Sensor' && av[0].licence === 'CC BY-NC-SA 4.0' && av[0].file === 'av2-20dd185d.json' && new RegExp(av[0].match, 'i').test('argoverse2 av2-20dd185d'));
 const vc = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 ok('vercel.json output/build', vc.outputDirectory === 'web/dist' && vc.buildCommand === 'node tools/build-web.js');
 

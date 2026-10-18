@@ -35,6 +35,23 @@ function build({ outDir, root, modelBase }) {
     fs.cpSync(src, path.join(outDir, path.relative('web', item)), { recursive: true });
   }
 
+  // Demo calibs (web/demo-data/calibs/*.json) are registered in the COPY of calibs/index.json only; extension/ stays untouched.
+  const calDir = path.join(root, 'web/demo-data/calibs');
+  const cals = fs.existsSync(calDir) ? fs.readdirSync(calDir).filter((f) => f.endsWith('.json')).sort() : [];
+  if (cals.length) {
+    const idxPath = path.join(outDir, 'ext/calibs/index.json');
+    const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+    for (const file of cals) {
+      const id = file.replace(/\.json$/, '');
+      fs.copyFileSync(path.join(calDir, file), path.join(outDir, 'ext/calibs', file));
+      if (idx.profiles.some((p) => p.id === id)) continue;
+      const av2 = /^av2/.test(id);
+      idx.profiles.push({ id, name: av2 ? `Argoverse 2 ${id}` : id, match: av2 ? 'av2|argoverse' : id,
+        dataset: av2 ? 'Argoverse 2 Sensor' : 'Demo', licence: 'CC BY-NC-SA 4.0', file });
+    }
+    fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1) + '\n');
+  }
+
   // detector.html: shim goes before the first ort script (same trick as tools/dev/mock_cvat.py); extBase/modelBase embedded here.
   const detPath = path.join(outDir, 'ext/ui/detector.html');
   const tags = '<script src="/shim/chrome-shim.js"></script>\n' +
