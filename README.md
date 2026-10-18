@@ -37,13 +37,13 @@ extension lấy điểm LiDAR nằm trong khung đó và **dựng sẵn cuboid 3
 
 ## Dùng thử trên web
 
-Demo: (điền link Vercel sau khi deploy)
+Demo: https://boxlift-demo.vercel.app (mở bằng Chrome trên máy tính)
 
 Bản demo chạy ngay trên trình duyệt, không cần cài extension hay CVAT. Trang chạy **nguyên mã extension** trên một job giả
 gồm **10 frame của Argoverse 2** (log `av2-20dd185d`, 7 camera + LiDAR).
 
 - Chỉ hỗ trợ **Chrome desktop** (hoặc trình duyệt nhân Chromium, cửa sổ rộng từ 1000 px).
-- Có hướng dẫn 4 bước: xem LiDAR chiếu lên ảnh, vẽ một box 3D, để máy đề xuất box (`T`), theo dõi box qua các frame (`Shift+K`).
+- Mở trang là thấy ngay màn hình 3D của point cloud (xoay, phóng to được). Hướng dẫn 7 bước, có khoanh sáng đúng nút cần dùng: màn hình 3D, mở BoxLift, ảnh camera với điểm LiDAR chiếu lên, vẽ box (`N`), để máy đề xuất (`T`), theo dõi qua các frame (`Shift+K`), rồi tự do thử.
 - Lần mở đầu tải khoảng 60 MB dữ liệu, sau đó khoảng 129 MB mô hình AI tải ngầm (chip ở góc trên bên phải báo tiến độ). WebGPU không bắt buộc.
 - Box bạn vẽ chỉ lưu trong trình duyệt này (nút "Đặt lại demo" để xoá), không gửi đi đâu.
 - Giới hạn: dữ liệu mẫu đóng gói sẵn, không mở được job CVAT thật. Console có thể hiện một lỗi 404 của `/ext/config/database.json`: đây là bình thường vì demo không có cấu hình Supabase.
