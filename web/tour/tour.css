@@ -1,13 +1,25 @@
 .demo-tour-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-  --t-bg: #151a21; --t-line: #2a313c; --t-text: #e9edf2; --t-muted: #98a2b0; --t-accent: #4c9aff; --t-on: #07111f; --t-err: #f2766b; --t-shadow: rgba(0,0,0,.55); }
+  --t-bg: #151a21; --t-line: #2a313c; --t-text: #e9edf2; --t-muted: #98a2b0; --t-accent: #4c9aff; --t-on: #07111f; --t-err: #f2766b; --t-shadow: rgba(0,0,0,.55); --t-dim: rgba(4,6,9,.55); }
 @media (prefers-color-scheme: light) { .demo-tour-layer { --t-bg: #fff; --t-line: #d9dee6; --t-text: #14181f; --t-muted: #525b68; --t-accent: #1a5fd0; --t-on: #fff; --t-err: #bb3326; --t-shadow: rgba(20,24,31,.16); } }
 /* Popover (top layer) reset: the UA stylesheet gives [popover] a border, padding, auto margins, a background and overflow:auto. */
-.demo-tour-layer[popover] { margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; width: auto; height: auto; color: inherit; }
-/* BoxLift's window covers nearly the whole viewport (28px margin) but its right-hand panel is empty below the list: dock the card there. */
-.demo-tour-card { position: absolute; right: 44px; bottom: 52px; width: min(300px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 14px;
-  background: var(--t-bg); color: var(--t-text); border: 1px solid var(--t-line); border-radius: 10px; box-shadow: 0 6px 24px var(--t-shadow); pointer-events: auto; }
-.demo-tour-card.mini { width: auto; max-width: min(300px, calc(100vw - 32px)); padding: 8px 12px; }
+.demo-tour-layer[popover] { margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; width: 100vw; height: 100vh; color: inherit; }
+.demo-tour-layer [hidden] { display: none !important; }
+/* Spotlight: the ring's huge shadow dims everything around the target; the layer has pointer-events none, so the target and
+   the rest of the page keep working under it. */
+.demo-tour-ring { position: fixed; box-sizing: border-box; border-radius: 10px; border: 2px solid var(--t-accent); pointer-events: none;
+  box-shadow: 0 0 0 9999px var(--t-dim), 0 0 0 4px rgba(76,154,255,.35), 0 0 18px 4px rgba(76,154,255,.45); transition: left .15s, top .15s, width .15s, height .15s; }
+.demo-tour-card { position: fixed; width: min(320px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 14px;
+  background: var(--t-bg); color: var(--t-text); border: 1px solid var(--t-accent); border-radius: 10px; box-shadow: 0 8px 28px var(--t-shadow); pointer-events: auto; }
+/* Arrow: a small rotated square on the bubble edge that faces the target. */
+.demo-tour-arrow { position: fixed; width: 12px; height: 12px; margin: -6px 0 0 -6px; background: var(--t-bg); pointer-events: none; transform: rotate(45deg); }
+.demo-tour-arrow[data-side="below"] { border-left: 1px solid var(--t-accent); border-top: 1px solid var(--t-accent); }
+.demo-tour-arrow[data-side="above"] { border-right: 1px solid var(--t-accent); border-bottom: 1px solid var(--t-accent); }
+.demo-tour-arrow[data-side="right"] { border-left: 1px solid var(--t-accent); border-bottom: 1px solid var(--t-accent); }
+.demo-tour-arrow[data-side="left"] { border-right: 1px solid var(--t-accent); border-top: 1px solid var(--t-accent); }
+/* Hidden ("Ẩn") or finished and hidden: a small pill bottom right, above BoxLift's launcher. */
+.demo-tour-card.mini { left: auto !important; top: auto !important; right: 44px; bottom: 64px; width: auto; max-width: min(340px, calc(100vw - 32px)); padding: 6px 10px; border-color: var(--t-line); }
 .demo-tour-card small { display: block; color: var(--t-muted); margin-bottom: 2px; }
+.demo-tour-card strong { display: block; font-size: 14px; }
 .demo-tour-card p { margin: 4px 0 10px; }
 .demo-tour-card .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .demo-tour-card button { font: inherit; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--t-line); background: transparent; color: var(--t-text); cursor: pointer; }
