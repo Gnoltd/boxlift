@@ -1,0 +1,9 @@
+{
+  "outputDirectory": "web/dist",
+  "buildCommand": "node tools/build-web.js",
+  "headers": [
+    { "source": "/(.*)\\.wasm", "headers": [{ "key": "Content-Type", "value": "application/wasm" }] },
+    { "source": "/ext/ort/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
+    { "source": "/demo-data/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
+  ]
+}
