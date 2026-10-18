@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoxLift · Demo</title>
+<style>
+body{margin:0;font:13px system-ui,sans-serif;background:#1b1b1b;color:#ddd}
+.top{padding:8px;background:#2b2b2b;display:flex;gap:8px;align-items:center}
+.top input{width:56px}
+#canvas{height:90vh;display:grid;place-content:center;color:#666}
+#boot-msg{position:fixed;inset:0;display:grid;place-content:center;text-align:center;font-size:18px;line-height:1.6;background:#1b1b1bee;color:#eee;z-index:2147483647;padding:24px}
+#boot-msg code{color:#f90;word-break:break-all}
+</style>
+<script>
+history.replaceState(null, '', '/tasks/1/jobs/1'); // cvat.js reads location.pathname (routeJob) — must precede the extension scripts
+document.cookie = 'csrftoken=mocktoken123; path=/';
+</script>
+</head>
+<body>
+<div class="top">BoxLift demo · job 1 · frame
+  <span class="cvat-player-frame-selector"><input type="number" value="0" min="0" max="0"></span>
+  <button class="cvat-player-previous-button" type="button">prev</button>
+  <button class="cvat-player-next-button" type="button">next</button>
+  <button class="cvat-annotation-header-save-button" type="button">Save</button>
+</div>
+<div id="canvas">(3D canvas)</div>
+<script src="/boot.js"></script>
+<script>Boot.run(window);</script>
+</body></html>
