@@ -125,7 +125,7 @@
     const onProgress = (e) => { st = { phase: 'loading', loaded: e.loaded, total: e.total, failed: 0 }; render(); };
     btn.addEventListener('click', () => {
       st = { phase: 'loading', loaded: 0, total: 0, failed: 0 }; render();
-      ML.retry(failed, onProgress).then(finish);
+      ML.retry(failed, onProgress).then(finish).catch(() => { st = { phase: 'error', loaded: st.loaded, total: st.total, failed: failed.length }; render(); });
     });
     render();
     const gpu = await ML.hasGpu(win.navigator);
@@ -139,6 +139,13 @@
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fail = (doc, url, why) => show(doc, `<b>Không tải được / Failed to load</b><br><code>${esc(url)}</code><br>${esc(why || '')}`);
+
+  // Until boot finishes, a runtime exception in an extension script shows the banner instead of a silent blank page. Returns dispose().
+  function guardBoot(win) {
+    const h = (ev) => fail(win.document, ev.filename || '', ev.message || 'error');
+    win.addEventListener('error', h);
+    return () => win.removeEventListener('error', h);
+  }
 
   function loadScript(doc, src) {
     return new Promise((resolve, reject) => {
@@ -178,8 +185,9 @@
         (sup.reason === 'width' ? '<br>Hãy mở rộng cửa sổ / widen the window.' : ''));
       return;
     }
-    let url = '';
+    let url = '', dispose = () => {};
     try {
+      dispose = guardBoot(win);
       url = '/demo-data/demo-manifest.json'; const manifest = await getJson(url);
       url = '/build-info.json'; const info = await getJson(url);
       wireFrameControls(doc, manifest.frames.length - 1);
@@ -196,13 +204,14 @@
       win.MockCvat.install(win, mock);
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
       win.Tour.start(win);
+      dispose();
       openPanel(win);
       startModels(win, info.modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);
       if (d) win.dispatchEvent(new win.CustomEvent('demo:annotation', { detail: d }));
-    } catch (e) { fail(doc, e.url || url, e.message); }
+    } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, chipText, chipLang, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, run, MIN_WIDTH };
 });

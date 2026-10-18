@@ -73,6 +73,10 @@ const av = JSON.parse(fs.readFileSync(path.join(outDir, 'ext/calibs/index.json')
 ok('real build: av2 profile exact', av.length === 1 && av[0].match === 'av2|argoverse' && av[0].name === 'Argoverse 2 av2-20dd185d' && av[0].dataset === 'Argoverse 2 Sensor' && av[0].licence === 'CC BY-NC-SA 4.0' && av[0].file === 'av2-20dd185d.json' && new RegExp(av[0].match, 'i').test('argoverse2 av2-20dd185d'));
 const notice = fs.existsSync(path.join(outDir, 'demo-data/NOTICE.md')) ? fs.readFileSync(path.join(outDir, 'demo-data/NOTICE.md'), 'utf8') : '';
 ok('dist/demo-data/NOTICE.md names source, licence, changes', /Argoverse 2 Sensor/.test(notice) && /av2-20dd185d/.test(notice) && /creativecommons\.org\/licenses\/by-nc-sa\/4\.0/.test(notice) && /10 .*100/.test(notice) && /non-commercial|phi thương mại/i.test(notice));
+const evil = path.join(tmp, 'distEvil');
+build({ outDir: evil, root: ROOT, modelBase: 'https://x/</script><img src=x>/' });
+const detEvil = fs.readFileSync(path.join(evil, 'ext/ui/detector.html'), 'utf8');
+ok('modelBase cannot break out of the inline script', !detEvil.includes('</script><img') && detEvil.includes('\\u003c/script>'));
 const vc = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 ok('vercel.json output/build', vc.outputDirectory === 'web/dist' && vc.buildCommand === 'node tools/build-web.js');
 const hdr = (src) => { const h = vc.headers.find((x) => x.source === src); return h && Object.fromEntries(h.headers.map((k) => [k.key, k.value])); };

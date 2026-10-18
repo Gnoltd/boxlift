@@ -17,6 +17,10 @@ body{margin:0;font:13px system-ui,sans-serif;background:#1b1b1b;color:#ddd}
 <script>
 history.replaceState(null, '', '/tasks/1/jobs/1'); // cvat.js reads location.pathname (routeJob) — must precede the extension scripts
 document.cookie = 'csrftoken=mocktoken123; path=/';
+function bootError(what, e) { // visible banner when boot.js is missing or Boot.run throws, instead of a blank page
+  var b = document.getElementById('boot-msg') || document.body.appendChild(document.createElement('div'));
+  b.id = 'boot-msg'; b.textContent = 'Không tải được / Failed to load: ' + what + (e && e.message ? ' (' + e.message + ')' : '');
+}
 </script>
 </head>
 <body>
@@ -27,6 +31,6 @@ document.cookie = 'csrftoken=mocktoken123; path=/';
   <button class="cvat-annotation-header-save-button" type="button">Save</button>
 </div>
 <div id="canvas"></div>
-<script src="/boot.js"></script>
-<script>Boot.run(window);</script>
+<script src="/boot.js" onerror="bootError('/boot.js')"></script>
+<script>try { Boot.run(window).catch(function (e) { bootError('Boot.run', e); }); } catch (e) { bootError('Boot.run', e); }</script>
 </body></html>

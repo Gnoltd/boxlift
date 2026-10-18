@@ -63,7 +63,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('scene'); ap.add_argument('--out', default='web/demo-data'); ap.add_argument('--frames', type=int, default=10)
     ap.add_argument('--budget-mb', type=float, default=36)
+    ap.add_argument('--force', action='store_true', help='allow --out that is not named demo-data (it is deleted first)')
     a = ap.parse_args()
+    if os.path.basename(os.path.normpath(a.out)) != 'demo-data' and not a.force:
+        ap.error(f'--out {a.out!r} will be deleted; refusing unless it ends with demo-data (or pass --force)')
     gt = os.path.join(a.scene, 'gt')
     fr = json.load(open(os.path.join(gt, 'frames.json')))
     boxes = json.load(open(os.path.join(gt, 'boxes.json')))

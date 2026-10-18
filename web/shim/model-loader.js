@@ -38,7 +38,7 @@
           if (end) break;
           done[i] += value.length; report(i);
         }
-        done[i] = Math.max(done[i], 0); size[i] = Math.max(size[i], done[i]);
+        size[i] = Math.max(size[i], done[i]);
         report(i);
       } catch (e) { failed.push(urls[i]); }
     }

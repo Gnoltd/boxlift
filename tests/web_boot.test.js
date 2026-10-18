@@ -86,5 +86,20 @@ assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName: 'DIV', isC
   const none = { document: { getElementById: () => null }, console: { warn: () => warned++ } };
   assert.strictEqual(await Boot.openPanel(none, 30), false);
   assert.strictEqual(warned, 1);
+  // boot error guard: runtime exceptions during boot become a visible banner; after dispose they are ignored
+  const mkWin = () => {
+    const boxes = {}, ls = {};
+    const doc = { body: { appendChild: (b) => { boxes[b.id] = b; } }, getElementById: (id) => boxes[id] || null, createElement: () => ({}) };
+    return { document: doc, boxes, addEventListener: (t, f) => { ls[t] = f; }, removeEventListener: (t, f) => { if (ls[t] === f) delete ls[t]; }, ls };
+  };
+  const gw = mkWin(), dispose = Boot.guardBoot(gw);
+  assert.strictEqual(typeof gw.ls.error, 'function');
+  gw.ls.error({ message: 'boom <b>', filename: '/ext/cvat.js' });
+  assert.ok(/boom &lt;b&gt;/.test(gw.boxes['boot-msg'].innerHTML) && /cvat\.js/.test(gw.boxes['boot-msg'].innerHTML));
+  dispose(); assert.strictEqual(gw.ls.error, undefined);
+  // static wiring in index.html
+  const html = require('fs').readFileSync(require('path').join(__dirname, '../web/index.html'), 'utf8');
+  assert.ok(/<script src="\/boot\.js"[^>]*onerror=/.test(html), 'boot.js script tag has onerror');
+  assert.ok(/try\s*\{\s*Boot\.run\(window\)/.test(html) && /catch/.test(html), 'Boot.run guarded');
   console.log('web_boot seed/keys/openPanel ok');
 })().catch((err) => { console.error(err); process.exit(1); });
