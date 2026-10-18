@@ -204,7 +204,7 @@ for (const k of Object.keys(S.vi)) assert.ok(!/^step\d/.test(k), 'old step<n> ke
 for (const l of ['vi', 'en']) {
   const s = S[l];
   assert.ok(/LiDAR/.test(s.sceneBody) && /xoay|rotate/i.test(s.sceneBody) && /cuộn|wheel|scroll/i.test(s.sceneBody), l + ' scene: drag rotates, wheel zooms');
-  assert.ok(/✕|Esc/.test(s.sceneBehindBody), l + ' sceneBehind names the close button');
+  assert.ok(/✕|Esc/.test(s.sceneBehindBody) && /Lưu phiên và thoát|Save session and leave/.test(s.sceneBehindBody), l + ' sceneBehind: close button + the exit-dialog choice that does not bring back a resume modal');
   assert.ok(/Mở BoxLift|Open BoxLift/.test(s.openBody), l + ' open names the launcher label');
   assert.ok(/1.?-?.?7/.test(s.cameraBody) && /\bH\b/.test(s.cameraBody), l + ' camera mentions camera keys and H');
   assert.ok(/\bN\b/.test(s.boxBody) && /Enter/.test(s.boxBody) && s.boxBody.search(/\bN\b/) < s.boxBody.search(/kéo|drag/i), l + ' box: N, then drag, Enter');

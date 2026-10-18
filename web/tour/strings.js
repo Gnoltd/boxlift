@@ -8,7 +8,7 @@
     vi: {
       stepOf: 'Bước {n}/{total}',
       sceneTitle: 'Màn hình 3D', sceneBody: 'Đây là đám mây điểm LiDAR của một frame. Kéo chuột để xoay, cuộn để phóng to, chuột phải để kéo ngang.',
-      sceneBehindTitle: 'Màn hình 3D ở phía sau', sceneBehindBody: 'Đám mây điểm LiDAR nằm sau cửa sổ BoxLift. Bấm ✕ (hoặc Esc) để đóng BoxLift và xem (nếu được hỏi, chọn "Tạm dừng, quay lại sau"), hoặc bấm "Tiếp" để bỏ qua.',
+      sceneBehindTitle: 'Màn hình 3D ở phía sau', sceneBehindBody: 'Đám mây điểm LiDAR nằm sau cửa sổ BoxLift. Bấm ✕ (hoặc Esc) để đóng BoxLift và xem (nếu được hỏi, chọn "Lưu phiên và thoát"), hoặc bấm "Tiếp" để bỏ qua.',
       openTitle: 'Mở BoxLift', openBody: 'Bấm "Mở BoxLift" để dán nhãn trên ảnh camera.',
       cameraTitle: 'LiDAR chiếu lên ảnh', cameraBody: 'Các chấm màu là điểm LiDAR chiếu lên ảnh. Đổi camera bằng phím 1-7 hoặc các tab. Phím H đổi kiểu hiển thị.',
       boxTitle: 'Vẽ một box', boxBody: 'Nhấn N, kéo một khung 2D quanh một chiếc xe, rồi nhấn Enter để lưu. Box 3D hiện ngay ở 3 góc nhìn cạnh.',
@@ -24,7 +24,7 @@
     en: {
       stepOf: 'Step {n}/{total}',
       sceneTitle: '3D screen', sceneBody: 'This is the LiDAR point cloud of one frame. Drag to rotate, scroll the wheel to zoom, right-drag to pan.',
-      sceneBehindTitle: 'The 3D screen is behind', sceneBehindBody: 'The LiDAR point cloud sits behind the BoxLift window. Press ✕ (or Esc) to close BoxLift and see it (if asked, choose "Pause, come back later"), or press "Next" to skip.',
+      sceneBehindTitle: 'The 3D screen is behind', sceneBehindBody: 'The LiDAR point cloud sits behind the BoxLift window. Press ✕ (or Esc) to close BoxLift and see it (if asked, choose "Save session and leave"), or press "Next" to skip.',
       openTitle: 'Open BoxLift', openBody: 'Press "Open BoxLift" to label on the camera images.',
       cameraTitle: 'LiDAR projected on the image', cameraBody: 'The coloured dots are LiDAR points projected onto the image. Switch camera with keys 1-7 or the tabs. H changes the display mode.',
       boxTitle: 'Draw a box', boxBody: 'Press N, drag a 2D box around a vehicle, then press Enter to save. The 3D box shows up in the 3 side views right away.',
