@@ -80,4 +80,8 @@ assert.deepStrictEqual(Object.keys(S.vi).sort(), Object.keys(S.en).sort());
 for (const l of ['vi', 'en']) for (const k in S[l]) assert.ok(String(S[l][k]).length > 0, l + '.' + k);
 for (const k of ['step0', 'step1', 'step2', 'step3']) assert.ok(S.vi[k + 'Title'] && S.vi[k + 'Body']);
 assert.ok(/CC BY-NC-SA 4\.0/.test(S.en.footer) && /github\.com\/Gnoltd\/boxlift/.test(S.en.footer + S.en.repoUrl));
+for (const l of ['vi', 'en']) {
+  assert.ok(/Argoverse 2 Sensor Dataset \(CC BY-NC-SA 4\.0\)/.test(S[l].footer), l + ' footer credits Argoverse 2');
+  assert.ok(!/nuScenes/i.test(JSON.stringify(S[l])), l + ' has no nuScenes text');
+}
 console.log('web_tour OK');
