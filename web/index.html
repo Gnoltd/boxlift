@@ -7,6 +7,9 @@ body{margin:0;font:13px system-ui,sans-serif;background:#1b1b1b;color:#ddd}
 .top input{width:56px}
 #canvas{height:90vh;display:grid;place-content:center;color:#666}
 #boot-msg{position:fixed;inset:0;display:grid;place-content:center;text-align:center;font-size:18px;line-height:1.6;background:#1b1b1bee;color:#eee;z-index:2147483647;padding:24px}
+#model-chip{position:fixed;left:12px;bottom:12px;z-index:2147483000;display:flex;gap:8px;align-items:center;padding:6px 12px;border-radius:16px;background:#2b2b2bee;color:#ddd;font-size:12px}
+#model-chip.error{background:#5a2020ee}
+#model-chip button{font:inherit;cursor:pointer}
 #boot-msg code{color:#f90;word-break:break-all}
 </style>
 <script>

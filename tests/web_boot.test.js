@@ -23,3 +23,11 @@ assert.strictEqual(Boot.restoreDetail(JSON.stringify({ shapes: [], tracks: [] })
 assert.deepStrictEqual(Boot.restoreDetail(JSON.stringify({ shapes: [{}], tracks: [{}, {}] })), { action: 'restore', shapes: 1, tracks: 2 });
 
 console.log('web_boot ok');
+
+// model chip text (VI/EN) and language pick
+assert.strictEqual(Boot.chipText({ phase: 'loading', loaded: 12.34e6, total: 129.2e6 }, 'vi'), 'Đang tải mô hình AI 12.3/129.2 MB');
+assert.strictEqual(Boot.chipText({ phase: 'loading', loaded: 0, total: 1e6 }, 'en'), 'Loading AI models 0.0/1.0 MB');
+assert.ok(/2/.test(Boot.chipText({ phase: 'error', failed: 2 }, 'vi')));
+assert.strictEqual(Boot.chipLang('{"lang":"en"}'), 'en');
+assert.strictEqual(Boot.chipLang(null), 'vi');
+console.log('web_boot chip ok');

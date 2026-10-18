@@ -21,6 +21,46 @@
     return shapes || tracks ? { action: 'restore', shapes, tracks } : null;
   }
 
+  const CHIP = {
+    vi: { loading: 'Đang tải mô hình AI {a}/{b} MB', done: 'Đã tải xong mô hình AI', error: 'Không tải được mô hình AI ({n} tệp)', retry: 'Thử lại' },
+    en: { loading: 'Loading AI models {a}/{b} MB', done: 'AI models ready', error: 'Could not load AI models ({n} files)', retry: 'Retry' }
+  };
+  function chipLang(raw) { try { return JSON.parse(raw).lang === 'en' ? 'en' : 'vi'; } catch (e) { return 'vi'; } }
+  // state: {phase:'loading'|'done'|'error', loaded, total (bytes), failed (count)} -> label text
+  function chipText(st, lang) {
+    const t = CHIP[lang] || CHIP.vi, mb = (n) => (n / 1e6).toFixed(1);
+    if (st.phase === 'done') return t.done;
+    if (st.phase === 'error') return t.error.replace('{n}', st.failed);
+    return t.loading.replace('{a}', mb(st.loaded)).replace('{b}', mb(st.total));
+  }
+
+  // Non-blocking chip; prefetch starts after the extension scripts so it never delays first paint of the canvas.
+  async function startModels(win, modelBase) {
+    const doc = win.document, ML = win.ModelLoader;
+    const chip = doc.createElement('div'); chip.id = 'model-chip';
+    const label = doc.createElement('span'), btn = doc.createElement('button');
+    btn.type = 'button'; btn.hidden = true; chip.append(label, btn); doc.body.appendChild(chip);
+    const lang = () => { try { return chipLang(win.localStorage.getItem('ext:viewOpts')); } catch (e) { return 'vi'; } };
+    let st = { phase: 'loading', loaded: 0, total: 0, failed: 0 };
+    const render = () => {
+      label.textContent = chipText(st, lang()); chip.className = st.phase;
+      btn.hidden = st.phase !== 'error'; btn.textContent = CHIP[lang()].retry;
+    };
+    let failed = [];
+    const finish = (r) => {
+      failed = r.failed; st = { phase: r.ok ? 'done' : 'error', loaded: st.loaded, total: st.total, failed: failed.length }; render();
+      if (r.ok) win.setTimeout(() => chip.remove(), 4000);
+    };
+    const onProgress = (e) => { st = { phase: 'loading', loaded: e.loaded, total: e.total, failed: 0 }; render(); };
+    btn.addEventListener('click', () => {
+      st = { phase: 'loading', loaded: 0, total: 0, failed: 0 }; render();
+      ML.retry(failed, onProgress).then(finish);
+    });
+    render();
+    const gpu = await ML.hasGpu(win.navigator);
+    finish(await ML.prefetch(ML.urlsFor(modelBase, gpu), onProgress));
+  }
+
   function show(doc, html) {
     let box = doc.getElementById('boot-msg');
     if (!box) { box = doc.createElement('div'); box.id = 'boot-msg'; doc.body.appendChild(box); }
@@ -72,7 +112,7 @@
       url = '/demo-data/demo-manifest.json'; const manifest = await getJson(url);
       url = '/build-info.json'; const info = await getJson(url);
       wireFrameControls(doc, manifest.frames.length - 1);
-      for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
+      for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
       win.ChromeShim.install(win, { extBase: '/ext/', modelBase: info.modelBase });
       const mock = win.MockCvat.create({
@@ -82,11 +122,12 @@
       win.MockCvat.install(win, mock);
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
       win.Tour.start(win);
+      startModels(win, info.modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);
       if (d) win.dispatchEvent(new win.CustomEvent('demo:annotation', { detail: d }));
     } catch (e) { fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, run, MIN_WIDTH };
+  return { supported, restoreDetail, chipText, chipLang, run, MIN_WIDTH };
 });
