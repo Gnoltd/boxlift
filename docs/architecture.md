@@ -81,6 +81,21 @@ flowchart LR
     REL --> INST["Chrome: Load unpacked"]
 ```
 
+## 6. Bản demo web
+
+Trang tĩnh trên Vercel chạy nguyên mã extension, không sửa; chỉ thêm lớp giả `chrome.*` và CVAT giả trong trình duyệt.
+
+```mermaid
+%%{init: {"flowchart": {"curve": "linear"}}}%%
+flowchart LR
+    PAGE["Trang web demo<br/>index.html, boot.js, hướng dẫn 4 bước"] --> SHIM["Lớp giả chrome.*<br/>và CVAT giả trong trình duyệt<br/>(dữ liệu Argoverse 2 đóng gói sẵn)"]
+    SHIM --> EXTJS["Script extension nguyên bản<br/>cvat.js và các module"]
+    EXTJS <-->|"MessageChannel"| DET["iframe detector"]
+    DET -->|"Tải mô hình ONNX"| MB[("MODEL_BASE<br/>URL thư mục mô hình")]
+```
+
+Box vẽ trong demo chỉ lưu ở trình duyệt (`localStorage`); không có server nào nhận dữ liệu.
+
 ## Quyết định thiết kế
 
 | Quyết định | Lý do |

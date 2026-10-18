@@ -15,6 +15,7 @@ extension lấy điểm LiDAR nằm trong khung đó và **dựng sẵn cuboid 3
 
 ## Mục lục
 
+- [Dùng thử trên web](#dùng-thử-trên-web)
 - [Tính năng chính](#tính-năng-chính)
 - [Cần chuẩn bị](#cần-chuẩn-bị)
 - [Cài đặt extension](#cài-đặt-extension)
@@ -33,6 +34,32 @@ extension lấy điểm LiDAR nằm trong khung đó và **dựng sẵn cuboid 3
 - [Hướng phát triển](#hướng-phát-triển)
 - [Dành cho người phát triển](#dành-cho-người-phát-triển)
 - [Ghi công và giấy phép](#ghi-công-và-giấy-phép)
+
+## Dùng thử trên web
+
+Demo: (điền link Vercel sau khi deploy)
+
+Bản demo chạy ngay trên trình duyệt, không cần cài extension hay CVAT. Trang chạy **nguyên mã extension** trên một job giả
+gồm **10 frame của Argoverse 2** (log `av2-20dd185d`, 7 camera + LiDAR).
+
+- Chỉ hỗ trợ **Chrome desktop** (hoặc trình duyệt nhân Chromium, cửa sổ rộng từ 1000 px).
+- Có hướng dẫn 4 bước: xem LiDAR chiếu lên ảnh, vẽ một box 3D, để máy đề xuất box (`T`), theo dõi box qua các frame (`Shift+K`).
+- Lần mở đầu tải khoảng 60 MB dữ liệu, sau đó khoảng 129 MB mô hình AI tải ngầm (chip ở góc trên bên phải báo tiến độ). WebGPU không bắt buộc.
+- Box bạn vẽ chỉ lưu trong trình duyệt này (nút "Đặt lại demo" để xoá), không gửi đi đâu.
+- Giới hạn: dữ liệu mẫu đóng gói sẵn, không mở được job CVAT thật. Console có thể hiện một lỗi 404 của `/ext/config/database.json`: đây là bình thường vì demo không có cấu hình Supabase.
+
+Chạy cục bộ:
+
+```bash
+MODEL_BASE=<url thư mục chứa các tệp .onnx> node tools/build-web.js   # hoặc --model-base <url>
+npx serve web/dist   # hoặc bất kỳ máy chủ tĩnh nào; cần rewrite /tasks/* về /index.html để tải lại trang không bị 404
+```
+
+Deploy lên Vercel: import repo, đặt biến môi trường `MODEL_BASE` (bắt buộc, build sẽ báo lỗi nếu thiếu). `vercel.json` đã khai
+báo build, thư mục `web/dist`, rewrite và header cache.
+
+Dữ liệu mẫu: Argoverse 2 Sensor Dataset, giấy phép [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+(đã chọn 10 trong 100 frame, ảnh đóng lại thành `.ctx`; chi tiết trong [`web/demo-data/NOTICE.md`](web/demo-data/NOTICE.md)). Demo miễn phí, phi thương mại.
 
 ## Tính năng chính
 

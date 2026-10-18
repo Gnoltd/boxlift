@@ -13,7 +13,7 @@ Dữ liệu mẫu trong thư mục này lấy từ **Argoverse 2 Sensor Dataset*
 
 ## Changes made / Thay đổi đã thực hiện
 
-- 10 of the 100 frames of the log were selected (evenly spaced window). / Chọn 10 trong 100 frame của log.
+- 10 of the 100 frames of the log were selected (the consecutive window 17 to 26). / Chọn 10 trong 100 frame của log.
 - The camera images were repacked into `.ctx` archives (one per frame) so the page can serve them as CVAT context images. / Ảnh camera được đóng lại thành các tệp `.ctx`.
 - Point clouds (`.pcd`) are unchanged. / Point cloud giữ nguyên.
 - Calibration was copied without annotations; no ground-truth boxes are included. / Calib được sao chép, không kèm nhãn.
