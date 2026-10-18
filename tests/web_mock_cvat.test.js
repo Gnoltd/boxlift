@@ -38,6 +38,13 @@ const shape = (f) => ({ type: 'cuboid', frame: f, label_id: 3, points: [0, 0, 0,
   r = await m.handle('PATCH', '/jobs/1/annotations?action=delete', H, { shapes: [{ id: 2 }] });
   assert.strictEqual(r.status, 200);
 
+  // duplicate id in one delete batch must not remove an unrelated annotation
+  r = await m.handle('PATCH', '/jobs/1/annotations?action=create', H, { shapes: [shape(2), shape(3)], tracks: [] });
+  const [da, db] = r.json.shapes.map((s) => s.id);
+  assert.strictEqual((await m.handle('PATCH', '/jobs/1/annotations?action=delete', H, { shapes: [{ id: da }, { id: da }] })).status, 200);
+  assert.deepStrictEqual((await m.handle('GET', '/jobs/1/annotations', {})).json.shapes.map((s) => s.id).sort(), [1, db].sort());
+  await m.handle('PATCH', '/jobs/1/annotations?action=delete', H, { shapes: [{ id: db }] });
+
   // tracks
   r = await m.handle('PATCH', '/jobs/1/annotations?action=create', H, { shapes: [], tracks: [{ label_id: 3, frame: 0, shapes: [shape(0), shape(2)] }] });
   const tid = r.json.tracks[0].id;
