@@ -119,6 +119,10 @@ for (const l of ['vi', 'en']) {
   assert.ok(/\bT\b/.test(S[l].step2Body) && /Enter/.test(S[l].step2Body) && /\bX\b/.test(S[l].step2Body), l + ' step 3');
   assert.ok(/Shift\+K/.test(S[l].step3Body) && /\bD\b/.test(S[l].step3Body) && /\bF\b/.test(S[l].step3Body), l + ' step 4');
   assert.ok(!/xoay|rotate/i.test(S[l].step0Body), l + ' no stale rotate text');
+  // the welcome box is seeded away (Boot.seedWelcomeSeen): no step may refer to it, and Draw mode is NOT on by itself
+  for (const k of ['step0Body', 'step1Body']) assert.ok(!/hộp chào|welcome/i.test(S[l][k]), l + ' ' + k + ' has no welcome-box text');
+  assert.ok(!/đã bật sẵn|already on/i.test(S[l].step1Body), l + ' step 2 does not claim Draw mode is on');
+  assert.ok(S[l].step1Body.search(/\bN\b/) < S[l].step1Body.search(/kéo|drag/i), l + ' step 2: press N before dragging');
   assert.ok(/CC BY-NC-SA 4\.0/.test(S[l].footer) && S[l].creditsToggle, l + ' credits in tour card');
 }
 assert.ok(/CC BY-NC-SA 4\.0/.test(S.en.footer) && /github\.com\/Gnoltd\/boxlift/.test(S.en.footer + S.en.repoUrl));

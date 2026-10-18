@@ -154,3 +154,20 @@ assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.
   assert.deepStrictEqual(Boot.cleanStart(mk({}), null, O), []);
   console.log('web_boot cleanStart ok');
 }
+
+// welcome box ("Bắt đầu với BoxLift") is marked seen so the first screen is the camera image + the tour card
+{
+  const mk = (o) => { const m = new Map(Object.entries(o)); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+  let ls = mk({});
+  assert.strictEqual(Boot.seedWelcomeSeen(ls), true);
+  assert.deepStrictEqual(JSON.parse(ls.getItem('ext:viewOpts')), { qsDone: true });
+  ls = mk({ 'ext:viewOpts': '{"lang":"en","qsDone":false,"size":3}' });
+  assert.strictEqual(Boot.seedWelcomeSeen(ls), true);
+  assert.deepStrictEqual(JSON.parse(ls.getItem('ext:viewOpts')), { lang: 'en', qsDone: true, size: 3 }, 'other view options kept');
+  assert.strictEqual(Boot.seedWelcomeSeen(ls), false, 'already seen: nothing written');
+  ls = mk({ 'ext:viewOpts': '{bad' });
+  assert.strictEqual(Boot.seedWelcomeSeen(ls), false, 'unreadable value left alone');
+  assert.strictEqual(ls.getItem('ext:viewOpts'), '{bad');
+  assert.strictEqual(Boot.seedWelcomeSeen({ getItem: () => { throw new Error('x'); } }), false);
+  console.log('web_boot welcome ok');
+}

@@ -7,8 +7,8 @@
   return {
     vi: {
       stepOf: 'Bước {n}/{total}',
-      step0Title: 'Xem LiDAR chiếu lên ảnh', step0Body: 'Các chấm màu trên ảnh camera là điểm LiDAR được chiếu lên ảnh. Đổi camera bằng phím 1-7 hoặc các tab. Phím H đổi kiểu hiển thị điểm (không phải bật/tắt). Nhấn Enter để đóng hộp chào, rồi bấm "Tiếp".',
-      step1Title: 'Vẽ một hộp 3D', step1Body: 'Kéo một khung 2D quanh một chiếc xe (chế độ Vẽ box đã bật sẵn, nếu chưa thì nhấn N). Kiểm tra hộp 3D và 3 góc nhìn cạnh, rồi nhấn Enter để lưu.',
+      step0Title: 'Xem LiDAR chiếu lên ảnh', step0Body: 'Các chấm màu trên ảnh camera là điểm LiDAR được chiếu lên ảnh. Đổi camera bằng phím 1-7 hoặc các tab. Phím H đổi kiểu hiển thị điểm (không phải bật/tắt). Xem xong thì bấm "Tiếp".',
+      step1Title: 'Vẽ một hộp 3D', step1Body: 'Nhấn N để bật chế độ Vẽ box, rồi kéo một khung 2D quanh một chiếc xe. Kiểm tra hộp 3D và 3 góc nhìn cạnh, rồi nhấn Enter để lưu.',
       step2Title: 'Để máy đề xuất hộp', step2Body: 'Nhấn T để máy đề xuất hộp (lần đầu phải tải mô hình AI, xem nhãn ở góc trên bên phải). Enter để lưu hộp đề xuất, X để bỏ.',
       step3Title: 'Theo dõi qua các khung hình', step3Body: 'Chọn hộp đã lưu rồi nhấn Shift+K để theo dõi nó qua các khung hình. Dùng D / F để về khung trước / sang khung sau.',
       next: 'Tiếp', skip: 'Bỏ qua', restartTour: 'Làm lại hướng dẫn', resetDemo: 'Đặt lại demo', hide: 'Ẩn',
@@ -20,8 +20,8 @@
     },
     en: {
       stepOf: 'Step {n}/{total}',
-      step0Title: 'LiDAR projected on the image', step0Body: 'The coloured dots on the camera image are LiDAR points projected onto it. Switch camera with keys 1-7 or the tabs. H cycles the point display mode (it is not an on/off toggle). Press Enter to close the welcome box, then "Next".',
-      step1Title: 'Draw a 3D box', step1Body: 'Drag a 2D box around a vehicle (Draw box mode is already on; if not, press N). Check the 3D box and the 3 side views, then press Enter to save.',
+      step0Title: 'LiDAR projected on the image', step0Body: 'The coloured dots on the camera image are LiDAR points projected onto it. Switch camera with keys 1-7 or the tabs. H cycles the point display mode (it is not an on/off toggle). When you are done, press "Next".',
+      step1Title: 'Draw a 3D box', step1Body: 'Press N to turn on Draw box mode, then drag a 2D box around a vehicle. Check the 3D box and the 3 side views, then press Enter to save.',
       step2Title: 'Let the machine propose boxes', step2Body: 'Press T to let the machine propose boxes (the first run downloads AI models: see the chip at the top right). Enter saves a proposal, X drops it.',
       step3Title: 'Track across frames', step3Body: 'Select a saved box and press Shift+K to track it across frames. Use D / F for the previous / next frame.',
       next: 'Next', skip: 'Skip', restartTour: 'Restart tour', resetDemo: 'Reset demo', hide: 'Hide',

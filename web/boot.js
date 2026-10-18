@@ -63,6 +63,20 @@
     drop(activeSessionKey(origin));
     return gone;
   }
+  // The extension's welcome box ("Bắt đầu với BoxLift") covers the camera image and competes with the tour card: mark it seen
+  // (viewOpts.qsDone, cvat.js updateQuick) keeping every other view option. Returns true when it wrote.
+  function seedWelcomeSeen(ls, prefix) {
+    const k = (prefix || 'ext:') + 'viewOpts';
+    try {
+      const raw = ls.getItem(k);
+      let o = {};
+      if (raw != null) { o = JSON.parse(raw); if (!o || typeof o !== 'object' || Array.isArray(o)) return false; }
+      if (o.qsDone === true) return false;
+      ls.setItem(k, JSON.stringify(Object.assign(o, { qsDone: true })));
+      return true;
+    } catch (e) { return false; }
+  }
+
   // D / F are CVAT's own previous / next frame shortcuts; the fake host page has to provide them.
   function frameKeyAction(ev) {
     const t = ev && ev.target;
@@ -235,6 +249,7 @@
       let ss = null; try { ss = win.sessionStorage; } catch (e) { /* blocked */ }
       cleanStart(win.localStorage, ss, origin);
       seedStorage(win.localStorage, origin, manifest);
+      seedWelcomeSeen(win.localStorage);
       wireFrameKeys(win);
       win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase });
       const mock = win.MockCvat.create({
@@ -254,5 +269,5 @@
     } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, activeSessionKey, cleanStart, RESET_FLAG, controlPage, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
 });
