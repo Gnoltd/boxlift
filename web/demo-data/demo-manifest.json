@@ -1,0 +1,90 @@
+{
+ "task": {
+  "id": 1,
+  "name": "argoverse2 av2-20dd185d"
+ },
+ "labels": [
+  {
+   "id": 3,
+   "name": "car",
+   "type": "cuboid"
+  },
+  {
+   "id": 4,
+   "name": "truck",
+   "type": "cuboid"
+  },
+  {
+   "id": 5,
+   "name": "bus",
+   "type": "cuboid"
+  },
+  {
+   "id": 6,
+   "name": "motorcycle",
+   "type": "cuboid"
+  },
+  {
+   "id": 7,
+   "name": "bicycle",
+   "type": "cuboid"
+  },
+  {
+   "id": 8,
+   "name": "pedestrian",
+   "type": "cuboid"
+  }
+ ],
+ "frames": [
+  {
+   "fid": "315969727-759654000",
+   "pcd": "demo-data/pcd/315969727-759654000.pcd",
+   "ctx": "demo-data/ctx/frame-315969727-759654000.ctx"
+  },
+  {
+   "fid": "315969727-859186000",
+   "pcd": "demo-data/pcd/315969727-859186000.pcd",
+   "ctx": "demo-data/ctx/frame-315969727-859186000.ctx"
+  },
+  {
+   "fid": "315969727-959383000",
+   "pcd": "demo-data/pcd/315969727-959383000.pcd",
+   "ctx": "demo-data/ctx/frame-315969727-959383000.ctx"
+  },
+  {
+   "fid": "315969728-059585000",
+   "pcd": "demo-data/pcd/315969728-059585000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-059585000.ctx"
+  },
+  {
+   "fid": "315969728-159781000",
+   "pcd": "demo-data/pcd/315969728-159781000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-159781000.ctx"
+  },
+  {
+   "fid": "315969728-259314000",
+   "pcd": "demo-data/pcd/315969728-259314000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-259314000.ctx"
+  },
+  {
+   "fid": "315969728-359510000",
+   "pcd": "demo-data/pcd/315969728-359510000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-359510000.ctx"
+  },
+  {
+   "fid": "315969728-459706000",
+   "pcd": "demo-data/pcd/315969728-459706000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-459706000.ctx"
+  },
+  {
+   "fid": "315969728-559902000",
+   "pcd": "demo-data/pcd/315969728-559902000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-559902000.ctx"
+  },
+  {
+   "fid": "315969728-659435000",
+   "pcd": "demo-data/pcd/315969728-659435000.pcd",
+   "ctx": "demo-data/ctx/frame-315969728-659435000.ctx"
+  }
+ ]
+}
