@@ -23,3 +23,9 @@ Dữ liệu mẫu trong thư mục này lấy từ **Argoverse 2 Sensor Dataset*
 This demo is free and non-commercial. The AI models it can download are trained on CC BY-NC-SA data (nuScenes, KITTI) and are for non-commercial use as well; see `extension/THIRD_PARTY.md` in the repository for each model's licence.
 
 Bản demo này miễn phí và phi thương mại. Các mô hình AI huấn luyện trên dữ liệu CC BY-NC-SA nên chỉ dùng phi thương mại.
+
+## Software / Phần mềm
+
+The 3D point-cloud screen of the demo uses **three.js** 0.185.1 (MIT licence, © three.js authors, https://threejs.org), served from this site (`/vendor/three/`, see `web/vendor/three/README.md` in the repository).
+
+Màn hình đám mây điểm 3D của demo dùng **three.js** 0.185.1 (giấy phép MIT).

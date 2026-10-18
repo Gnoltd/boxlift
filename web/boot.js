@@ -112,7 +112,7 @@
       })();
     });
   }
-  // Open the BoxLift panel by clicking its launcher in the shadow root; warns (no throw) when it never shows up.
+  // Open the BoxLift panel by clicking its launcher in the shadow root; warns (no throw) when it never shows up. Used by the tour.
   async function openPanel(win, timeoutMs) {
     const fab = await waitFor(() => {
       const host = win.document.getElementById('lidar-cam-panel-host');
@@ -242,6 +242,16 @@
     doc.querySelector('.cvat-player-previous-button').addEventListener('click', () => go(+input.value - 1));
   }
 
+  // 3D point-cloud screen behind BoxLift (web/viewer/viewer.js, needs the extension's PCD/BoxFit/Tracks globals). Best-effort:
+  // a failed module load or WebGL error shows a short text in #canvas and never stops the demo.
+  function mountViewer(win, manifest) {
+    const box = win.document.getElementById('canvas');
+    if (!box) return Promise.resolve(null);
+    return import('/viewer/viewer.js')
+      .then((m) => { try { return m.mount(win, { container: box, manifest, annKey: ANN_KEY }); } catch (e) { win.console.warn('BoxLift demo 3D:', e.message); return m.showFallback(win, box); } })
+      .catch((e) => { win.console.warn('BoxLift demo 3D:', e.message); box.textContent = ''; return null; });
+  }
+
   async function run(win) {
     const doc = win.document;
     const sup = supported(win.navigator.userAgent, win.innerWidth);
@@ -258,7 +268,7 @@
       const origin = win.location.origin, modelBase = absBase(info.modelBase, origin);
       const swReady = controlPage(win.navigator, swUrl(modelBase), 3000);
       wireFrameControls(doc, manifest.frames.length - 1);
-      for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
+      for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/viewer/scene.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
       let ss = null; try { ss = win.sessionStorage; } catch (e) { /* blocked */ }
       cleanStart(win.localStorage, ss, origin, win.Tour.resetKeys);
@@ -273,9 +283,9 @@
       win.MockCvat.install(win, mock);
       await swReady;   // before cvat.js creates the detector iframe and before the prefetch
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
-      win.Tour.start(win);
+      mountViewer(win, manifest);
+      win.Tour.start(win);   // BoxLift is NOT auto-opened: the tour's step 2 points at its launcher
       dispose();
-      openPanel(win);
       startModels(win, modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);

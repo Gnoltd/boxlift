@@ -5,7 +5,8 @@
 const fs = require('fs'), path = require('path');
 
 const SKIP_TOP = new Set(['config', 'db', 'background.js', 'bridge.js']); // relative to extension/
-const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js', 'web/sw.js']; // sw.js at the root: its scope is the whole site
+// sw.js at the root: its scope is the whole site. vendor = three.js (MIT, web/vendor/three/README.md); viewer = the 3D point-cloud screen.
+const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js', 'web/sw.js', 'web/vendor', 'web/viewer'];
 
 function resolveModelBase(modelBase, env) {
   env = env || process.env;

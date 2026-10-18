@@ -4,9 +4,14 @@
 <link rel="icon" href="/ext/assets/Logo/boxlift-mark.svg" type="image/svg+xml">
 <style>
 body{margin:0;font:13px system-ui,sans-serif;background:#1b1b1b;color:#ddd}
-.top{padding:8px;background:#2b2b2b;display:flex;gap:8px;align-items:center}
+.top{position:relative;z-index:1;padding:8px;background:#2b2b2bdd;display:flex;gap:8px;align-items:center}
 .top input{width:56px}
-#canvas{height:90vh}
+/* 3D point-cloud screen (web/viewer/viewer.js) fills the viewport behind the frame bar and BoxLift */
+#canvas{position:fixed;inset:0;background:#101317;overflow:hidden}
+#canvas .viewer-canvas{display:block;width:100%;height:100%;cursor:grab}
+#canvas .viewer-canvas:active{cursor:grabbing}
+#canvas .viewer-hud{position:absolute;left:12px;top:46px;padding:3px 8px;border-radius:6px;background:#151a21cc;color:#98a2b0;font-size:11px;pointer-events:none}
+#canvas .viewer-fallback{height:100%;display:grid;place-content:center;max-width:520px;margin:0 auto;padding:0 24px;text-align:center;font-size:15px;line-height:1.6;color:#c9d1db}
 #boot-msg{position:fixed;inset:0;display:grid;place-content:center;text-align:center;font-size:18px;line-height:1.6;background:#1b1b1bee;color:#eee;z-index:2147483647;padding:24px}
 /* Top strip above the BoxLift window (it leaves a 21-27px margin): the one place that covers no extension control. Popover = top layer. */
 #model-chip{position:fixed;inset:2px 12px auto auto;margin:0;border:0;width:auto;overflow:visible;z-index:2147483000;display:flex;gap:8px;align-items:center;box-sizing:border-box;height:18px;padding:0 10px;border-radius:9px;background:#2b2b2bee;color:#ddd;font-size:11px;line-height:18px}
@@ -14,6 +19,8 @@ body{margin:0;font:13px system-ui,sans-serif;background:#1b1b1b;color:#ddd}
 #model-chip button{font:inherit;cursor:pointer;height:16px;padding:0 8px;line-height:14px;border-radius:8px}
 #boot-msg code{color:#f90;word-break:break-all}
 </style>
+<!-- three.js (MIT) vendored on this origin, see web/vendor/three/README.md; used by /viewer/viewer.js -->
+<script type="importmap">{"imports":{"three":"/vendor/three/three.module.min.js"}}</script>
 <script>
 history.replaceState(null, '', '/tasks/1/jobs/1'); // cvat.js reads location.pathname (routeJob) — must precede the extension scripts
 document.cookie = 'csrftoken=mocktoken123; path=/';

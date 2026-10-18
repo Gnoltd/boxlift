@@ -31,11 +31,12 @@ ok('detector.html embeds modelBase', det.includes('https://cdn.example/models/')
 ok('detector.html derives absolute extBase at runtime', det.includes("new URL('/ext/', location.origin).href") && !det.includes("extBase: '/ext/'"));
 ok('source detector.html untouched', !fs.readFileSync(path.join(ROOT, 'extension/ui/detector.html'), 'utf8').includes('chrome-shim'));
 const size = files.filter((f) => !f.includes('models/')).reduce((s, f) => s + fs.statSync(path.join(outDir, f)).size, 0);
+ok('vendored three.js: module build + core + OrbitControls + LICENSE, no CDN copy', ['three.module.min.js', 'three.core.min.js', 'OrbitControls.js', 'LICENSE', 'README.md'].every((f) => files.includes('vendor/three/' + f)) && !files.some((f) => /^vendor\/three\/.*(webgpu|three\.cjs|three\.module\.js$)/.test(f)));
 ok(`output <= 90 MB (${(size / 1e6).toFixed(1)} MB)`, size <= 90e6);
 
 // optional inputs: copied when present, skipped (not an error) when absent
 // each optional source: present in the repo under test -> must be in the output, absent -> must not be
-for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/], ['web/sw.js', /^sw\.js$/]]) {
+for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/], ['web/sw.js', /^sw\.js$/], ['web/vendor', /^vendor\/three\/three\.module\.min\.js$/], ['web/viewer', /^viewer\//]]) {
   const present = fs.existsSync(path.join(ROOT, src));
   ok(`optional ${src}: ${present ? 'copied' : 'skipped'} to match repo`, files.some((f) => out.test(f)) === present);
 }

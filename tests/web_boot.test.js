@@ -102,6 +102,16 @@ assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName: 'DIV', isC
   const html = require('fs').readFileSync(require('path').join(__dirname, '../web/index.html'), 'utf8');
   assert.ok(/<script src="\/boot\.js"[^>]*onerror=/.test(html), 'boot.js script tag has onerror');
   assert.ok(/try\s*\{\s*Boot\.run\(window\)/.test(html) && /catch/.test(html), 'Boot.run guarded');
+  // 3D screen: three.js through an import map to the vendored copy (own origin, no CDN); the panel is no longer auto-opened
+  const im = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+  assert.ok(im, 'index.html has an import map');
+  assert.deepStrictEqual(JSON.parse(im[1]).imports, { three: '/vendor/three/three.module.min.js' });
+  assert.ok(html.indexOf('importmap') < html.indexOf('/boot.js'), 'import map before any module load');
+  assert.ok(!/https?:\/\//.test(html.replace(/<!--[\s\S]*?-->/g, '')), 'index.html loads nothing from another origin');
+  const bootSrc = require('fs').readFileSync(require('path').join(__dirname, '../web/boot.js'), 'utf8');
+  const runSrc = bootSrc.slice(bootSrc.indexOf('async function run('));
+  assert.ok(!/openPanel\(/.test(runSrc), 'run() does not auto-open BoxLift (the tour does)');
+  assert.ok(/import\(['"]\/viewer\/viewer\.js['"]\)/.test(bootSrc) && /mountViewer\(win, manifest\)/.test(runSrc), 'run() mounts the 3D viewer module');
   console.log('web_boot seed/keys/openPanel ok');
 })().catch((err) => { console.error(err); process.exit(1); });
 
