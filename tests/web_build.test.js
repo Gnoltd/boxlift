@@ -73,6 +73,23 @@ const av = JSON.parse(fs.readFileSync(path.join(outDir, 'ext/calibs/index.json')
 ok('real build: av2 profile exact', av.length === 1 && av[0].match === 'av2|argoverse' && av[0].name === 'Argoverse 2 av2-20dd185d' && av[0].dataset === 'Argoverse 2 Sensor' && av[0].licence === 'CC BY-NC-SA 4.0' && av[0].file === 'av2-20dd185d.json' && new RegExp(av[0].match, 'i').test('argoverse2 av2-20dd185d'));
 const vc = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 ok('vercel.json output/build', vc.outputDirectory === 'web/dist' && vc.buildCommand === 'node tools/build-web.js');
+const hdr = (src) => { const h = vc.headers.find((x) => x.source === src); return h && Object.fromEntries(h.headers.map((k) => [k.key, k.value])); };
+ok('vercel.json SPA rewrite /tasks/* -> /index.html', JSON.stringify(vc.rewrites) === JSON.stringify([{ source: '/tasks/:path*', destination: '/index.html' }]));
+const IMM = 'public, max-age=31536000, immutable', HOUR = 'public, max-age=3600';
+ok('cache: immutable only for pcd/ctx', hdr('/demo-data/pcd/(.*)')['Cache-Control'] === IMM && hdr('/demo-data/ctx/(.*)')['Cache-Control'] === IMM);
+ok('cache: 1h for manifest, calibs, ort', hdr('/demo-data/demo-manifest.json')['Cache-Control'] === HOUR && hdr('/demo-data/calibs/(.*)')['Cache-Control'] === HOUR && hdr('/ext/ort/(.*)')['Cache-Control'] === HOUR);
+ok('no broad immutable /demo-data/(.*) rule', !vc.headers.some((h) => h.source === '/demo-data/(.*)') && vc.headers.filter((h) => h.headers.some((k) => /immutable/.test(k.value))).every((h) => /^\/demo-data\/(pcd|ctx)\//.test(h.source)));
+ok('wasm MIME kept', hdr('/(.*)\\.wasm')['Content-Type'] === 'application/wasm');
+ok('X-Frame-Options SAMEORIGIN on all paths', hdr('/(.*)')['X-Frame-Options'] === 'SAMEORIGIN');
+// modelBase: on Vercel a missing MODEL_BASE must fail the build instead of silently shipping /models/
+const { resolveModelBase } = require('../tools/build-web.js');
+ok('resolveModelBase: explicit wins', resolveModelBase('https://a/', { VERCEL: '1', MODEL_BASE: 'https://b/' }) === 'https://a/');
+ok('resolveModelBase: env MODEL_BASE', resolveModelBase(undefined, { VERCEL: '1', MODEL_BASE: 'https://b/' }) === 'https://b/');
+ok('resolveModelBase: local fallback /models/', resolveModelBase(undefined, {}) === '/models/');
+let thrown = ''; try { resolveModelBase(undefined, { VERCEL: '1' }); } catch (e) { thrown = e.message; }
+ok('resolveModelBase: throws on Vercel without MODEL_BASE', /MODEL_BASE/.test(thrown));
+const sp = require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools/build-web.js')], { env: { ...process.env, VERCEL: '1', MODEL_BASE: '' }, encoding: 'utf8' });
+ok('build-web.js exits non-zero on Vercel without MODEL_BASE', sp.status !== 0 && /MODEL_BASE/.test(sp.stderr));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 process.exit(fails ? 1 : 0);

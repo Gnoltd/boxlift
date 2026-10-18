@@ -1,16 +1,24 @@
 // node tools/build-web.js [--model-base <url>] — static bundle for the Vercel web demo → web/dist/.
 // Copies extension/ unchanged to ext/ (minus models, config, db, background/bridge/options), the shim, and the optional
 // tour / demo-data / index.html / boot.js; patches ext/ui/detector.html to install the chrome.* shim; writes build-info.json.
-// modelBase: --model-base, else env MODEL_BASE, else /models/.
+// modelBase: --model-base, else env MODEL_BASE, else /models/ (local only; on Vercel a missing MODEL_BASE fails the build).
 const fs = require('fs'), path = require('path');
 
 const SKIP_TOP = new Set(['config', 'db', 'background.js', 'bridge.js']); // relative to extension/
 const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js'];
 
+function resolveModelBase(modelBase, env) {
+  env = env || process.env;
+  const v = modelBase || env.MODEL_BASE;
+  if (v) return v;
+  if (env.VERCEL) throw new Error('MODEL_BASE chưa đặt: trên Vercel hãy đặt biến môi trường MODEL_BASE (URL thư mục chứa các tệp .onnx) hoặc truyền --model-base.');
+  return '/models/';
+}
+
 function build({ outDir, root, modelBase }) {
   root = root || path.resolve(__dirname, '..');
   outDir = outDir || path.join(root, 'web/dist');
-  modelBase = modelBase || process.env.MODEL_BASE || '/models/';
+  modelBase = resolveModelBase(modelBase);
   const EXT = path.join(root, 'extension');
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
@@ -66,10 +74,12 @@ function build({ outDir, root, modelBase }) {
   return outDir;
 }
 
-module.exports = { build };
+module.exports = { build, resolveModelBase };
 
 if (require.main === module) {
   const a = process.argv, i = a.indexOf('--model-base');
-  const out = build({ modelBase: i >= 0 ? a[i + 1] : undefined });
-  console.log('web build →', path.relative(process.cwd(), out) || out);
+  try {
+    const out = build({ modelBase: i >= 0 ? a[i + 1] : undefined });
+    console.log('web build →', path.relative(process.cwd(), out) || out);
+  } catch (e) { console.error(e.message); process.exit(1); }
 }
