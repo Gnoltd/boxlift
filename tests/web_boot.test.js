@@ -103,3 +103,32 @@ assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName: 'DIV', isC
   assert.ok(/try\s*\{\s*Boot\.run\(window\)/.test(html) && /catch/.test(html), 'Boot.run guarded');
   console.log('web_boot seed/keys/openPanel ok');
 })().catch((err) => { console.error(err); process.exit(1); });
+
+// service worker: registration URL carries the absolute model base; controlPage is bounded and never throws
+assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.js?base=' + encodeURIComponent('https://huggingface.co/u/m/resolve/main/'));
+(async () => {
+  const mkNav = (o) => {
+    const ls = {}, reg = [];
+    const sw = { controller: o.controller || null, register: (u, opt) => { reg.push([u, opt]); return o.reject ? Promise.reject(new Error('blocked')) : Promise.resolve({}); },
+      addEventListener: (t, f) => { ls[t] = f; }, removeEventListener: (t, f) => { if (ls[t] === f) delete ls[t]; } };
+    return { nav: o.none ? {} : { serviceWorker: sw }, sw, ls, reg };
+  };
+  let n = mkNav({ none: true });
+  assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 50), false, 'no SW support: false, no throw');
+  n = mkNav({ controller: {} });
+  assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 50), true, 'already controlled (reload)');
+  assert.deepStrictEqual(n.reg, [['/sw.js?base=x', { scope: '/' }]], 'still registers (update check)');
+  n = mkNav({});
+  const p = Boot.controlPage(n.nav, '/sw.js?base=x', 1000);
+  setTimeout(() => { n.sw.controller = {}; n.ls.controllerchange(); }, 10);
+  assert.strictEqual(await p, true, 'first load: resolves on controllerchange');
+  n = mkNav({});
+  const t0 = Date.now();
+  assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 40), false, 'never claims: times out');
+  assert.ok(Date.now() - t0 < 500);
+  n = mkNav({ reject: true });
+  assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 1000), false, 'register rejected: false quickly');
+  const thrower = { get serviceWorker() { throw new Error('SecurityError'); } };
+  assert.strictEqual(await Boot.controlPage(thrower, '/sw.js?base=x', 40), false, 'access throws: false');
+  console.log('web_boot sw ok');
+})().catch((err) => { console.error(err); process.exit(1); });

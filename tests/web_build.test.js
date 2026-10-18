@@ -18,6 +18,7 @@ ok('no database.json / background.js / bridge.js / options.* in output', !files.
 ok('no config/ or db/ dirs', !files.some((f) => /^ext\/(config|db)\//.test(f)));
 ok('keeps models/frustum.json and SHA256SUMS', files.includes('ext/models/frustum.json') && files.includes('ext/models/SHA256SUMS'));
 ok('copies shim', files.includes('shim/chrome-shim.js') && files.includes('shim/mock-cvat.js'));
+ok('service worker at the site root + its pure core in shim/', files.includes('sw.js') && files.includes('shim/sw-core.js') && /importScripts\('\/shim\/sw-core\.js'\)/.test(fs.readFileSync(path.join(outDir, 'sw.js'), 'utf8')));
 const info = JSON.parse(fs.readFileSync(path.join(outDir, 'build-info.json'), 'utf8'));
 assert.deepStrictEqual(info.scripts, manifest.content_scripts[1].js);
 ok('build-info scripts == content_scripts[1].js in order', true);
@@ -34,7 +35,7 @@ ok(`output <= 90 MB (${(size / 1e6).toFixed(1)} MB)`, size <= 90e6);
 
 // optional inputs: copied when present, skipped (not an error) when absent
 // each optional source: present in the repo under test -> must be in the output, absent -> must not be
-for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/]]) {
+for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/], ['web/sw.js', /^sw\.js$/]]) {
   const present = fs.existsSync(path.join(ROOT, src));
   ok(`optional ${src}: ${present ? 'copied' : 'skipped'} to match repo`, files.some((f) => out.test(f)) === present);
 }
@@ -86,6 +87,7 @@ ok('cache: immutable only for pcd/ctx', hdr('/demo-data/pcd/(.*)')['Cache-Contro
 ok('cache: 1h for manifest, calibs, ort', hdr('/demo-data/demo-manifest.json')['Cache-Control'] === HOUR && hdr('/demo-data/calibs/(.*)')['Cache-Control'] === HOUR && hdr('/ext/ort/(.*)')['Cache-Control'] === HOUR);
 ok('no broad immutable /demo-data/(.*) rule', !vc.headers.some((h) => h.source === '/demo-data/(.*)') && vc.headers.filter((h) => h.headers.some((k) => /immutable/.test(k.value))).every((h) => /^\/demo-data\/(pcd|ctx)\//.test(h.source)));
 ok('wasm MIME kept', hdr('/(.*)\\.wasm')['Content-Type'] === 'application/wasm');
+ok('sw.js: no-cache + Service-Worker-Allowed /', hdr('/sw.js') && hdr('/sw.js')['Cache-Control'] === 'no-cache' && hdr('/sw.js')['Service-Worker-Allowed'] === '/');
 ok('X-Frame-Options SAMEORIGIN on all paths', hdr('/(.*)')['X-Frame-Options'] === 'SAMEORIGIN');
 // modelBase: on Vercel a missing MODEL_BASE must fail the build instead of silently shipping /models/
 const { resolveModelBase } = require('../tools/build-web.js');

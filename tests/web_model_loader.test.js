@@ -76,6 +76,16 @@ function fakeFetch(plan, calls) {
   assert.deepStrictEqual(r, { ok: true, failed: [] });
   assert.deepStrictEqual(calls, [urls[1], urls[2]]);
 
+  // a response from the Service Worker cache: no content-length, the whole file in one chunk -> completes at once, size from bytes
+  const cached = async () => ({ ok: true, status: 200, headers: { get: () => null }, body: body(70, 70) });
+  ev = [];
+  r = await ModelLoader.prefetch([BASE + 'yolox_s.onnx'], (e) => ev.push(e), cached);
+  assert.deepStrictEqual(r, { ok: true, failed: [] });
+  assert.strictEqual(ev[ev.length - 1].loaded, 70);
+  assert.strictEqual(ev[ev.length - 1].total, 70, 'total falls back to the bytes read');
+  const noHeaders = async () => ({ ok: true, status: 200, body: body(5, 5) });
+  assert.deepStrictEqual(await ModelLoader.prefetch([BASE + 'x.onnx'], null, noHeaders), { ok: true, failed: [] });
+
   // empty list is ok
   assert.deepStrictEqual(await ModelLoader.prefetch([], () => {}, fakeFetch(plan, [])), { ok: true, failed: [] });
   console.log('web_model_loader ok');

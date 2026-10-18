@@ -1,11 +1,11 @@
 // node tools/build-web.js [--model-base <url>] — static bundle for the Vercel web demo → web/dist/.
 // Copies extension/ unchanged to ext/ (minus models, config, db, background/bridge/options), the shim, and the optional
-// tour / demo-data / index.html / boot.js; patches ext/ui/detector.html to install the chrome.* shim; writes build-info.json.
+// tour / demo-data / index.html / boot.js / sw.js; patches ext/ui/detector.html to install the chrome.* shim; writes build-info.json.
 // modelBase: --model-base, else env MODEL_BASE, else /models/ (local only; on Vercel a missing MODEL_BASE fails the build).
 const fs = require('fs'), path = require('path');
 
 const SKIP_TOP = new Set(['config', 'db', 'background.js', 'bridge.js']); // relative to extension/
-const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js'];
+const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js', 'web/sw.js']; // sw.js at the root: its scope is the whole site
 
 function resolveModelBase(modelBase, env) {
   env = env || process.env;

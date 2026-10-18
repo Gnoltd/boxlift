@@ -89,6 +89,25 @@
     return true;
   }
 
+  // Service Worker (web/sw.js) caches the models under their stable URL; the model base rides on the registration URL.
+  const swUrl = (modelBase) => '/sw.js?base=' + encodeURIComponent(modelBase);
+  // Register and wait (bounded) until the SW controls this page, so the prefetch and the detector iframe go through it.
+  // Resolves false (never rejects) without SW support, when registration fails or times out: the demo then works uncached.
+  function controlPage(nav, url, timeoutMs) {
+    return new Promise((resolve) => {
+      let sw;
+      try { sw = nav && nav.serviceWorker; } catch (e) { sw = null; }
+      if (!sw || typeof sw.register !== 'function') { resolve(false); return; }
+      let t = null;
+      const end = (v) => { if (t !== null) clearTimeout(t); try { sw.removeEventListener('controllerchange', onChange); } catch (e) { /* ignore */ } resolve(v); };
+      const onChange = () => end(true);
+      try { sw.register(url, { scope: '/' }).catch(() => end(false)); } catch (e) { end(false); return; }
+      if (sw.controller) { end(true); return; }
+      sw.addEventListener('controllerchange', onChange);
+      t = setTimeout(() => end(!!sw.controller), timeoutMs || 3000);
+    });
+  }
+
   const CHIP = {
     vi: { loading: 'Đang tải mô hình AI {a}/{b} MB', done: 'Đã tải xong mô hình AI', error: 'Không tải được mô hình AI ({n} tệp)', retry: 'Thử lại' },
     en: { loading: 'Loading AI models {a}/{b} MB', done: 'AI models ready', error: 'Could not load AI models ({n} files)', retry: 'Retry' }
@@ -101,7 +120,6 @@
     if (st.phase === 'error') return t.error.replace('{n}', st.failed);
     return t.loading.replace('{a}', mb(st.loaded)).replace('{b}', mb(st.total));
   }
-
   // Non-blocking chip; prefetch starts after the extension scripts so it never delays first paint of the canvas.
   async function startModels(win, modelBase) {
     const doc = win.document, ML = win.ModelLoader;
@@ -190,28 +208,30 @@
       dispose = guardBoot(win);
       url = '/demo-data/demo-manifest.json'; const manifest = await getJson(url);
       url = '/build-info.json'; const info = await getJson(url);
+      const origin = win.location.origin, modelBase = absBase(info.modelBase, origin);
+      const swReady = controlPage(win.navigator, swUrl(modelBase), 3000);
       wireFrameControls(doc, manifest.frames.length - 1);
       for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
-      const origin = win.location.origin;
       seedStorage(win.localStorage, origin, manifest);
       wireFrameKeys(win);
-      win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase: absBase(info.modelBase, origin) });
+      win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase });
       const mock = win.MockCvat.create({
         manifest, storage: win.localStorage,
         fetchBin: async (p) => { const u = '/' + String(p).replace(/^\//, ''); const r = await fetch(u); if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { url: u }); return r.arrayBuffer(); }
       });
       win.MockCvat.install(win, mock);
+      await swReady;   // before cvat.js creates the detector iframe and before the prefetch
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
       win.Tour.start(win);
       dispose();
       openPanel(win);
-      startModels(win, info.modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
+      startModels(win, modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);
       if (d) win.dispatchEvent(new win.CustomEvent('demo:annotation', { detail: d }));
     } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, controlPage, run, MIN_WIDTH };
 });
