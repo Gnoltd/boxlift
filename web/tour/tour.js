@@ -95,9 +95,9 @@
     machine.onChange((s) => { hidden = false; try { ls().setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* ignore */ } render(); });
     win.addEventListener('demo:annotation', (e) => annotationEvents(e.detail).forEach((x) => machine.notify(x)));
     win.addEventListener('keydown', (e) => { if (isTourKey(e)) machine.notify('auto-key'); }, true);
-    win.addEventListener('storage', (e) => { if (e.key === 'ext:viewOpts') render(); });
-    win.setInterval(() => { if (lang() !== mount._lang) { mount._lang = lang(); render(); } }, 1000);   // language switch happens inside the extension shadow root
-    mount._lang = lang();
+    let lastLang = lang();
+    // Poll: the extension's language switch is a same-window localStorage write (no 'storage' event fires for those).
+    win.setInterval(() => { const l = lang(); if (l !== lastLang) { lastLang = l; render(); } }, 1000);
     render();
     return { render };
   }

@@ -32,13 +32,23 @@ const size = files.filter((f) => !f.includes('models/')).reduce((s, f) => s + fs
 ok(`output <= 90 MB (${(size / 1e6).toFixed(1)} MB)`, size <= 90e6);
 
 // optional inputs: copied when present, skipped (not an error) when absent
-ok('absent optional inputs are skipped', !files.some((f) => /^(tour|demo-data)\//.test(f) || f === 'index.html' || f === 'boot.js') || fs.existsSync(path.join(ROOT, 'web/index.html')));
+// each optional source: present in the repo under test -> must be in the output, absent -> must not be
+for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/]]) {
+  const present = fs.existsSync(path.join(ROOT, src));
+  ok(`optional ${src}: ${present ? 'copied' : 'skipped'} to match repo`, files.some((f) => out.test(f)) === present);
+}
 const fx = path.join(tmp, 'root');
 fs.cpSync(path.join(ROOT, 'extension'), path.join(fx, 'extension'), { recursive: true, filter: (s) => !s.endsWith('.onnx') });
 fs.cpSync(path.join(ROOT, 'web/shim'), path.join(fx, 'web/shim'), { recursive: true });
 for (const [f, c] of [['web/index.html', '<html>'], ['web/boot.js', '//boot'], ['web/tour/t.js', '//t'], ['web/demo-data/d.json', '{}']]) {
   fs.mkdirSync(path.dirname(path.join(fx, f)), { recursive: true }); fs.writeFileSync(path.join(fx, f), c);
 }
+const bare = path.join(tmp, 'bare');
+fs.cpSync(path.join(fx, 'extension'), path.join(bare, 'extension'), { recursive: true });
+fs.cpSync(path.join(fx, 'web/shim'), path.join(bare, 'web/shim'), { recursive: true });
+const outBare = path.join(tmp, 'distBare');
+build({ outDir: outBare, root: bare });
+ok('absent optional inputs are skipped (bare fixture root)', !walk(outBare).map((f) => path.relative(outBare, f)).some((f) => /^(tour|demo-data)\//.test(f) || f === 'index.html' || f === 'boot.js'));
 const out2 = path.join(tmp, 'dist2');
 build({ outDir: out2, root: fx });
 const f2 = walk(out2).map((f) => path.relative(out2, f));
