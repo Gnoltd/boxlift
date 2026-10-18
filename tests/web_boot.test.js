@@ -31,3 +31,60 @@ assert.ok(/2/.test(Boot.chipText({ phase: 'error', failed: 2 }, 'vi')));
 assert.strictEqual(Boot.chipLang('{"lang":"en"}'), 'en');
 assert.strictEqual(Boot.chipLang(null), 'vi');
 console.log('web_boot chip ok');
+
+// absolute bases (cvat.js does new URL(getURL('')).origin)
+assert.strictEqual(Boot.absBase('/ext/', 'https://d.example'), 'https://d.example/ext/');
+assert.strictEqual(Boot.absBase('/models/', 'https://d.example'), 'https://d.example/models/');
+assert.strictEqual(Boot.absBase('https://m.example/x/', 'https://d.example'), 'https://m.example/x/');
+assert.strictEqual(new URL(Boot.absBase('/ext/', 'http://127.0.0.1:8792')).origin, 'http://127.0.0.1:8792');
+
+// seeded storage: origins, Shape mode, identity label map accepted by LabelMap
+const LM = require('../extension/function/labelmap.js');
+const manifest = require('../web/demo-data/demo-manifest.json');
+const ORIGIN = 'https://d.example';
+const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+const ls = mem();
+ls.setItem('ext:saveMode:' + ORIGIN + ':1', '"track"'); // user data must survive
+const written = Boot.seedStorage(ls, ORIGIN, manifest);
+assert.deepStrictEqual(written.sort(), ['labelMap:' + ORIGIN + ':t1', 'origins'].sort());
+assert.deepStrictEqual(JSON.parse(ls.getItem('ext:origins')), [ORIGIN]);
+assert.strictEqual(JSON.parse(ls.getItem('ext:saveMode:' + ORIGIN + ':1')), 'track');
+const e = Boot.seedEntries(ORIGIN, manifest);
+assert.strictEqual(e['saveMode:' + ORIGIN + ':1'], 'shape');
+const rec = JSON.parse(ls.getItem('ext:labelMap:' + ORIGIN + ':t1'));
+const v = LM.valid(rec, manifest.labels);
+assert.strictEqual(v.confirmed, true);
+assert.deepStrictEqual(v.map, LM.suggest(manifest.labels));
+assert.ok(LM.CLASSES.every((c) => v.map[c] != null && manifest.labels.find((l) => l.id === v.map[c]).name === c));
+assert.deepStrictEqual(Boot.seedStorage(ls, ORIGIN, manifest), []); // second boot writes nothing
+
+// D / F frame keys
+const k = (o) => Boot.frameKeyAction({ target: { tagName: 'DIV' }, ...o });
+assert.strictEqual(k({ key: 'd' }), 'previous');
+assert.strictEqual(k({ key: 'F' }), 'next');
+assert.strictEqual(k({ key: 'f', shiftKey: true }), null);
+assert.strictEqual(k({ key: 'f', ctrlKey: true }), null);
+assert.strictEqual(k({ key: 'f', metaKey: true }), null);
+assert.strictEqual(k({ key: 'f', altKey: true }), null);
+assert.strictEqual(k({ key: 'f', defaultPrevented: true }), null);
+assert.strictEqual(k({ key: 'x' }), null);
+for (const tagName of ['INPUT', 'TEXTAREA', 'SELECT']) assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName } }), null);
+assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName: 'DIV', isContentEditable: true } }), null);
+
+// waitFor + openPanel
+(async () => {
+  let n = 0;
+  assert.strictEqual(await Boot.waitFor(() => (++n >= 3 ? 'ok' : null), 1000, 5), 'ok');
+  assert.strictEqual(await Boot.waitFor(() => null, 40, 5), null);
+  assert.strictEqual(await Boot.waitFor(() => { throw new Error('x'); }, 20, 5), null);
+  let clicked = 0, warned = 0;
+  const fab = { click: () => clicked++ };
+  const host = { shadowRoot: { getElementById: (id) => (id === 'fab' ? fab : null) } };
+  const win = { document: { getElementById: () => host }, console: { warn: () => warned++ } };
+  assert.strictEqual(await Boot.openPanel(win, 100), true);
+  assert.strictEqual(clicked, 1);
+  const none = { document: { getElementById: () => null }, console: { warn: () => warned++ } };
+  assert.strictEqual(await Boot.openPanel(none, 30), false);
+  assert.strictEqual(warned, 1);
+  console.log('web_boot seed/keys/openPanel ok');
+})().catch((err) => { console.error(err); process.exit(1); });

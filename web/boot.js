@@ -21,6 +21,74 @@
     return shapes || tracks ? { action: 'restore', shapes, tracks } : null;
   }
 
+  // cvat.js does new URL(chrome.runtime.getURL('')).origin, so the bases handed to the shim must be absolute.
+  function absBase(base, origin) { return new URL(String(base), origin).href; }
+
+  // First-run storage the extension would otherwise ask the visitor for. Keys live under the shim prefix 'ext:'; existing values win.
+  // origins: detector.js accepts only listed origins; saveMode: demo starts in Shape (cvat.js defaults to track); labelMap: identity, confirmed.
+  function seedEntries(origin, manifest) {
+    const map = {};
+    for (const l of manifest.labels) map[l.name] = l.id;
+    return {
+      origins: [origin],
+      [`saveMode:${origin}:${manifest.task.id}`]: 'shape',
+      [`labelMap:${origin}:t${manifest.task.id}`]: { map, confirmed: true, at: 0 }
+    };
+  }
+  function seedStorage(ls, origin, manifest, prefix) {
+    prefix = prefix || 'ext:';
+    const e = seedEntries(origin, manifest), written = [];
+    for (const k of Object.keys(e)) {
+      try { if (ls.getItem(prefix + k) == null) { ls.setItem(prefix + k, JSON.stringify(e[k])); written.push(k); } } catch (err) { /* storage blocked */ }
+    }
+    return written;
+  }
+
+  // D / F are CVAT's own previous / next frame shortcuts; the fake host page has to provide them.
+  function frameKeyAction(ev) {
+    const t = ev && ev.target;
+    if (!ev || ev.defaultPrevented || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return null;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return null;
+    const k = String(ev.key || '').toLowerCase();
+    return k === 'd' ? 'previous' : k === 'f' ? 'next' : null;
+  }
+  // The extension window stops key events at its panel, so a bubble listener on window never sees them. Listen in the
+  // capture phase and decide after dispatch (a timeout later), once the extension has had its chance to preventDefault.
+  function wireFrameKeys(win) {
+    win.addEventListener('keydown', (e) => {
+      const snap = { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, shiftKey: e.shiftKey, target: e.composedPath()[0] };
+      win.setTimeout(() => {
+        const a = frameKeyAction({ ...snap, defaultPrevented: e.defaultPrevented });
+        const b = a && win.document.querySelector('.cvat-player-' + a + '-button');
+        if (b) b.click();
+      }, 0);
+    }, true);
+  }
+
+  // Poll fn until it returns a truthy value or timeoutMs passes; resolves with the value or null (never rejects).
+  function waitFor(fn, timeoutMs, intervalMs) {
+    intervalMs = intervalMs || 50;
+    return new Promise((resolve) => {
+      const t0 = Date.now();
+      (function poll() {
+        let v = null; try { v = fn(); } catch (e) { /* not ready */ }
+        if (v) resolve(v);
+        else if (Date.now() - t0 >= timeoutMs) resolve(null);
+        else setTimeout(poll, intervalMs);
+      })();
+    });
+  }
+  // Open the BoxLift panel by clicking its launcher in the shadow root; warns (no throw) when it never shows up.
+  async function openPanel(win, timeoutMs) {
+    const fab = await waitFor(() => {
+      const host = win.document.getElementById('lidar-cam-panel-host');
+      return host && host.shadowRoot && host.shadowRoot.getElementById('fab');
+    }, timeoutMs || 10000);
+    if (!fab) { win.console.warn('BoxLift: launcher #fab not found, panel not opened automatically'); return false; }
+    fab.click();
+    return true;
+  }
+
   const CHIP = {
     vi: { loading: 'Đang tải mô hình AI {a}/{b} MB', done: 'Đã tải xong mô hình AI', error: 'Không tải được mô hình AI ({n} tệp)', retry: 'Thử lại' },
     en: { loading: 'Loading AI models {a}/{b} MB', done: 'AI models ready', error: 'Could not load AI models ({n} files)', retry: 'Retry' }
@@ -114,7 +182,10 @@
       wireFrameControls(doc, manifest.frames.length - 1);
       for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
-      win.ChromeShim.install(win, { extBase: '/ext/', modelBase: info.modelBase });
+      const origin = win.location.origin;
+      seedStorage(win.localStorage, origin, manifest);
+      wireFrameKeys(win);
+      win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase: absBase(info.modelBase, origin) });
       const mock = win.MockCvat.create({
         manifest, storage: win.localStorage,
         fetchBin: async (p) => { const u = '/' + String(p).replace(/^\//, ''); const r = await fetch(u); if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { url: u }); return r.arrayBuffer(); }
@@ -122,6 +193,7 @@
       win.MockCvat.install(win, mock);
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
       win.Tour.start(win);
+      openPanel(win);
       startModels(win, info.modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);
@@ -129,5 +201,5 @@
     } catch (e) { fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, chipText, chipLang, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, chipText, chipLang, run, MIN_WIDTH };
 });

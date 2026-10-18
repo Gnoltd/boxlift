@@ -55,7 +55,7 @@ function build({ outDir, root, modelBase }) {
   // detector.html: shim goes before the first ort script (same trick as tools/dev/mock_cvat.py); extBase/modelBase embedded here.
   const detPath = path.join(outDir, 'ext/ui/detector.html');
   const tags = '<script src="/shim/chrome-shim.js"></script>\n' +
-    `<script>ChromeShim.install(window, { extBase: '/ext/', modelBase: ${JSON.stringify(modelBase)} });</script>\n`;
+    `<script>ChromeShim.install(window, { extBase: new URL('/ext/', location.origin).href, modelBase: new URL(${JSON.stringify(modelBase)}, location.origin).href });</script>\n`;
   const html = fs.readFileSync(detPath, 'utf8');
   const re = /<script src="(\.\.\/)?ort\//;
   if (!re.test(html)) throw new Error('detector.html: không thấy <script src="…ort/"');

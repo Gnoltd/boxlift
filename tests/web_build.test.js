@@ -27,6 +27,7 @@ const det = fs.readFileSync(path.join(outDir, 'ext/ui/detector.html'), 'utf8');
 const iShim = det.indexOf('chrome-shim.js'), iOrt = det.search(/<script src="(\.\.\/)?ort\//);
 ok('detector.html has chrome-shim.js before ort/', iShim >= 0 && iOrt > iShim);
 ok('detector.html embeds modelBase', det.includes('https://cdn.example/models/') && det.includes('ChromeShim.install'));
+ok('detector.html derives absolute extBase at runtime', det.includes("new URL('/ext/', location.origin).href") && !det.includes("extBase: '/ext/'"));
 ok('source detector.html untouched', !fs.readFileSync(path.join(ROOT, 'extension/ui/detector.html'), 'utf8').includes('chrome-shim'));
 const size = files.filter((f) => !f.includes('models/')).reduce((s, f) => s + fs.statSync(path.join(outDir, f)).size, 0);
 ok(`output <= 90 MB (${(size / 1e6).toFixed(1)} MB)`, size <= 90e6);
