@@ -1,4 +1,4 @@
-/* Model prefetch for the web demo: fetch() each .onnx once so it sits in the HTTP cache; ORT later fetches the same URL. */
+/* Model prefetch for the web demo: fetch() each .onnx once so the Service Worker (web/sw.js) stores it; ORT later gets the same URL from that cache. */
 (function (root, factory) {
   const v = factory();
   if (typeof module === 'object' && module.exports) module.exports = v; else root.ModelLoader = v;
@@ -38,7 +38,7 @@
           if (end) break;
           done[i] += value.length; report(i);
         }
-        done[i] = Math.max(done[i], 0); size[i] = Math.max(size[i], done[i]);
+        size[i] = done[i];   // complete: the real size (a cached response may have no content-length)
         report(i);
       } catch (e) { failed.push(urls[i]); }
     }

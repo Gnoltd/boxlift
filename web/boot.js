@@ -21,6 +21,129 @@
     return shapes || tracks ? { action: 'restore', shapes, tracks } : null;
   }
 
+  // cvat.js does new URL(chrome.runtime.getURL('')).origin, so the bases handed to the shim must be absolute.
+  function absBase(base, origin) { return new URL(String(base), origin).href; }
+
+  // First-run storage the extension would otherwise ask the visitor for. Keys live under the shim prefix 'ext:'; existing values win.
+  // origins: detector.js accepts only listed origins; saveMode: demo starts in Shape (cvat.js defaults to track); labelMap: identity, confirmed.
+  function seedEntries(origin, manifest) {
+    const map = {};
+    for (const l of manifest.labels) map[l.name] = l.id;
+    return {
+      origins: [origin],
+      [`saveMode:${origin}:${manifest.task.id}`]: 'shape',
+      [`labelMap:${origin}:t${manifest.task.id}`]: { map, confirmed: true, at: 0 }
+    };
+  }
+  function seedStorage(ls, origin, manifest, prefix) {
+    prefix = prefix || 'ext:';
+    const e = seedEntries(origin, manifest), written = [];
+    for (const k of Object.keys(e)) {
+      try { if (ls.getItem(prefix + k) == null) { ls.setItem(prefix + k, JSON.stringify(e[k])); written.push(k); } } catch (err) { /* storage blocked */ }
+    }
+    return written;
+  }
+
+  // The extension keeps its open work session under 'active_session:<origin>' (function/session.js); a stored one with activity
+  // makes cvat.js show the "resume session" modal on every load. The demo always starts a fresh session; boxes are untouched.
+  const RESET_FLAG = 'demo:reset';
+  const activeSessionKey = (origin, prefix) => (prefix || 'ext:') + 'active_session:' + origin;
+  // "Đặt lại demo" sets RESET_FLAG in sessionStorage before reloading: the extension may write some keys back before unload,
+  // so the next boot clears again the keys the tour's own reset clears (resetKeys = Tour.resetKeys, one predicate for both
+  // paths). Returns the removed keys; never throws.
+  function cleanStart(ls, ss, origin, resetKeys) {
+    const gone = [];
+    const drop = (k) => { try { if (ls.getItem(k) != null) { ls.removeItem(k); gone.push(k); } } catch (e) { /* storage blocked */ } };
+    let reset = false;
+    try { reset = !!(ss && ss.getItem(RESET_FLAG)); if (reset) ss.removeItem(RESET_FLAG); } catch (e) { reset = false; }
+    if (reset && typeof resetKeys === 'function') {
+      const ks = [];
+      try { for (let i = 0; i < ls.length; i++) ks.push(ls.key(i)); } catch (e) { /* storage blocked */ }
+      resetKeys(ks.filter(Boolean)).forEach(drop);
+    }
+    drop(activeSessionKey(origin));
+    return gone;
+  }
+  // The extension's welcome box ("Bắt đầu với BoxLift") covers the camera image and competes with the tour card: mark it seen
+  // (viewOpts.qsDone, cvat.js updateQuick) keeping every other view option. Returns true when it wrote.
+  function seedWelcomeSeen(ls, prefix) {
+    const k = (prefix || 'ext:') + 'viewOpts';
+    try {
+      const raw = ls.getItem(k);
+      let o = {};
+      if (raw != null) { o = JSON.parse(raw); if (!o || typeof o !== 'object' || Array.isArray(o)) return false; }
+      if (o.qsDone === true) return false;
+      ls.setItem(k, JSON.stringify(Object.assign(o, { qsDone: true })));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // D / F are CVAT's own previous / next frame shortcuts; the fake host page has to provide them.
+  function frameKeyAction(ev) {
+    const t = ev && ev.target;
+    if (!ev || ev.defaultPrevented || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return null;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return null;
+    const k = String(ev.key || '').toLowerCase();
+    return k === 'd' ? 'previous' : k === 'f' ? 'next' : null;
+  }
+  // The extension window stops key events at its panel, so a bubble listener on window never sees them. Listen in the
+  // capture phase and decide after dispatch (a timeout later), once the extension has had its chance to preventDefault.
+  function wireFrameKeys(win) {
+    win.addEventListener('keydown', (e) => {
+      const snap = { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, shiftKey: e.shiftKey, target: e.composedPath()[0] };
+      win.setTimeout(() => {
+        const a = frameKeyAction({ ...snap, defaultPrevented: e.defaultPrevented });
+        const b = a && win.document.querySelector('.cvat-player-' + a + '-button');
+        if (b) b.click();
+      }, 0);
+    }, true);
+  }
+
+  // Poll fn until it returns a truthy value or timeoutMs passes; resolves with the value or null (never rejects).
+  function waitFor(fn, timeoutMs, intervalMs) {
+    intervalMs = intervalMs || 50;
+    return new Promise((resolve) => {
+      const t0 = Date.now();
+      (function poll() {
+        let v = null; try { v = fn(); } catch (e) { /* not ready */ }
+        if (v) resolve(v);
+        else if (Date.now() - t0 >= timeoutMs) resolve(null);
+        else setTimeout(poll, intervalMs);
+      })();
+    });
+  }
+  // Open the BoxLift panel by clicking its launcher in the shadow root; warns (no throw) when it never shows up.
+  async function openPanel(win, timeoutMs) {
+    const fab = await waitFor(() => {
+      const host = win.document.getElementById('lidar-cam-panel-host');
+      return host && host.shadowRoot && host.shadowRoot.getElementById('fab');
+    }, timeoutMs || 10000);
+    if (!fab) { win.console.warn('BoxLift: launcher #fab not found, panel not opened automatically'); return false; }
+    fab.click();
+    return true;
+  }
+
+  // Service Worker (web/sw.js) caches the models under their stable URL; the model base rides on the registration URL.
+  // updateViaCache 'none': sw.js AND its importScripts (shim/sw-core.js) are always revalidated, so a core change reaches visitors.
+  const SW_OPTIONS = { scope: '/', updateViaCache: 'none' };
+  const swUrl = (modelBase) => '/sw.js?base=' + encodeURIComponent(modelBase);
+  // Register and wait (bounded) until the SW controls this page, so the prefetch and the detector iframe go through it.
+  // Resolves false (never rejects) without SW support, when registration fails or times out: the demo then works uncached.
+  function controlPage(nav, url, timeoutMs) {
+    return new Promise((resolve) => {
+      let sw;
+      try { sw = nav && nav.serviceWorker; } catch (e) { sw = null; }
+      if (!sw || typeof sw.register !== 'function') { resolve(false); return; }
+      let t = null;
+      const end = (v) => { if (t !== null) clearTimeout(t); try { sw.removeEventListener('controllerchange', onChange); } catch (e) { /* ignore */ } resolve(v); };
+      const onChange = () => end(true);
+      try { sw.register(url, SW_OPTIONS).catch(() => end(false)); } catch (e) { end(false); return; }
+      if (sw.controller) { end(true); return; }
+      sw.addEventListener('controllerchange', onChange);
+      t = setTimeout(() => end(!!sw.controller), timeoutMs || 3000);
+    });
+  }
+
   const CHIP = {
     vi: { loading: 'Đang tải mô hình AI {a}/{b} MB', done: 'Đã tải xong mô hình AI', error: 'Không tải được mô hình AI ({n} tệp)', retry: 'Thử lại' },
     en: { loading: 'Loading AI models {a}/{b} MB', done: 'AI models ready', error: 'Could not load AI models ({n} files)', retry: 'Retry' }
@@ -33,28 +156,41 @@
     if (st.phase === 'error') return t.error.replace('{n}', st.failed);
     return t.loading.replace('{a}', mb(st.loaded)).replace('{b}', mb(st.total));
   }
+  function chipView(st, lang) {
+    return { text: chipText(st, lang), retry: (CHIP[lang] || CHIP.vi).retry, cls: st.phase, showRetry: st.phase === 'error' };
+  }
+  // Same-window localStorage writes fire no 'storage' event, so the chip polls the language like the tour does: tick() calls
+  // onChange(lang) once per change.
+  function langWatcher(read, onChange) {
+    let last = read();
+    return () => { const l = read(); if (l !== last) { last = l; onChange(l); } };
+  }
 
   // Non-blocking chip; prefetch starts after the extension scripts so it never delays first paint of the canvas.
   async function startModels(win, modelBase) {
     const doc = win.document, ML = win.ModelLoader;
     const chip = doc.createElement('div'); chip.id = 'model-chip';
+    // Top layer (Popover API) for the same reason as the tour card: BoxLift's backdrop and the Tay/Tool chip paint over any z-index.
+    try { chip.setAttribute('popover', 'manual'); } catch (e) { /* fallback: z-index in index.html */ }
     const label = doc.createElement('span'), btn = doc.createElement('button');
     btn.type = 'button'; btn.hidden = true; chip.append(label, btn); doc.body.appendChild(chip);
+    try { chip.showPopover(); } catch (e) { chip.removeAttribute('popover'); }
     const lang = () => { try { return chipLang(win.localStorage.getItem('ext:viewOpts')); } catch (e) { return 'vi'; } };
     let st = { phase: 'loading', loaded: 0, total: 0, failed: 0 };
     const render = () => {
-      label.textContent = chipText(st, lang()); chip.className = st.phase;
-      btn.hidden = st.phase !== 'error'; btn.textContent = CHIP[lang()].retry;
+      const v = chipView(st, lang());
+      label.textContent = v.text; chip.className = v.cls; btn.hidden = !v.showRetry; btn.textContent = v.retry;
     };
+    const poll = win.setInterval(langWatcher(lang, render), 1000);
     let failed = [];
     const finish = (r) => {
       failed = r.failed; st = { phase: r.ok ? 'done' : 'error', loaded: st.loaded, total: st.total, failed: failed.length }; render();
-      if (r.ok) win.setTimeout(() => chip.remove(), 4000);
+      if (r.ok) win.setTimeout(() => { win.clearInterval(poll); chip.remove(); }, 4000);
     };
     const onProgress = (e) => { st = { phase: 'loading', loaded: e.loaded, total: e.total, failed: 0 }; render(); };
     btn.addEventListener('click', () => {
       st = { phase: 'loading', loaded: 0, total: 0, failed: 0 }; render();
-      ML.retry(failed, onProgress).then(finish);
+      ML.retry(failed, onProgress).then(finish).catch(() => { st = { phase: 'error', loaded: st.loaded, total: st.total, failed: failed.length }; render(); });
     });
     render();
     const gpu = await ML.hasGpu(win.navigator);
@@ -68,6 +204,13 @@
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fail = (doc, url, why) => show(doc, `<b>Không tải được / Failed to load</b><br><code>${esc(url)}</code><br>${esc(why || '')}`);
+
+  // Until boot finishes, a runtime exception in an extension script shows the banner instead of a silent blank page. Returns dispose().
+  function guardBoot(win) {
+    const h = (ev) => fail(win.document, ev.filename || '', ev.message || 'error');
+    win.addEventListener('error', h);
+    return () => win.removeEventListener('error', h);
+  }
 
   function loadScript(doc, src) {
     return new Promise((resolve, reject) => {
@@ -107,27 +250,38 @@
         (sup.reason === 'width' ? '<br>Hãy mở rộng cửa sổ / widen the window.' : ''));
       return;
     }
-    let url = '';
+    let url = '', dispose = () => {};
     try {
+      dispose = guardBoot(win);
       url = '/demo-data/demo-manifest.json'; const manifest = await getJson(url);
       url = '/build-info.json'; const info = await getJson(url);
+      const origin = win.location.origin, modelBase = absBase(info.modelBase, origin);
+      const swReady = controlPage(win.navigator, swUrl(modelBase), 3000);
       wireFrameControls(doc, manifest.frames.length - 1);
       for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
-      win.ChromeShim.install(win, { extBase: '/ext/', modelBase: info.modelBase });
+      let ss = null; try { ss = win.sessionStorage; } catch (e) { /* blocked */ }
+      cleanStart(win.localStorage, ss, origin, win.Tour.resetKeys);
+      seedStorage(win.localStorage, origin, manifest);
+      seedWelcomeSeen(win.localStorage);
+      wireFrameKeys(win);
+      win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase });
       const mock = win.MockCvat.create({
         manifest, storage: win.localStorage,
         fetchBin: async (p) => { const u = '/' + String(p).replace(/^\//, ''); const r = await fetch(u); if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { url: u }); return r.arrayBuffer(); }
       });
       win.MockCvat.install(win, mock);
+      await swReady;   // before cvat.js creates the detector iframe and before the prefetch
       for (const s of info.scripts) { url = '/ext/' + s; await loadScript(doc, url); }
       win.Tour.start(win);
-      startModels(win, info.modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
+      dispose();
+      openPanel(win);
+      startModels(win, modelBase).catch(() => { /* chip is best-effort; the extension reports a missing model itself */ });
       let raw = null; try { raw = win.localStorage.getItem(ANN_KEY); } catch (e) { /* storage blocked */ }
       const d = restoreDetail(raw);
       if (d) win.dispatchEvent(new win.CustomEvent('demo:annotation', { detail: d }));
-    } catch (e) { fail(doc, e.url || url, e.message); }
+    } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, chipText, chipLang, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, chipView, langWatcher, swUrl, SW_OPTIONS, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
 });

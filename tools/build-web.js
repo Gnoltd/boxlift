@@ -1,16 +1,24 @@
 // node tools/build-web.js [--model-base <url>] — static bundle for the Vercel web demo → web/dist/.
 // Copies extension/ unchanged to ext/ (minus models, config, db, background/bridge/options), the shim, and the optional
-// tour / demo-data / index.html / boot.js; patches ext/ui/detector.html to install the chrome.* shim; writes build-info.json.
-// modelBase: --model-base, else env MODEL_BASE, else /models/.
+// tour / demo-data / index.html / boot.js / sw.js; patches ext/ui/detector.html to install the chrome.* shim; writes build-info.json.
+// modelBase: --model-base, else env MODEL_BASE, else /models/ (local only; on Vercel a missing MODEL_BASE fails the build).
 const fs = require('fs'), path = require('path');
 
 const SKIP_TOP = new Set(['config', 'db', 'background.js', 'bridge.js']); // relative to extension/
-const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js'];
+const OPTIONAL = ['web/tour', 'web/demo-data', 'web/index.html', 'web/boot.js', 'web/sw.js']; // sw.js at the root: its scope is the whole site
+
+function resolveModelBase(modelBase, env) {
+  env = env || process.env;
+  const v = modelBase || env.MODEL_BASE;
+  if (v) return v;
+  if (env.VERCEL) throw new Error('MODEL_BASE chưa đặt: trên Vercel hãy đặt biến môi trường MODEL_BASE (URL thư mục chứa các tệp .onnx) hoặc truyền --model-base.');
+  return '/models/';
+}
 
 function build({ outDir, root, modelBase }) {
   root = root || path.resolve(__dirname, '..');
   outDir = outDir || path.join(root, 'web/dist');
-  modelBase = modelBase || process.env.MODEL_BASE || '/models/';
+  modelBase = resolveModelBase(modelBase);
   const EXT = path.join(root, 'extension');
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
@@ -35,10 +43,27 @@ function build({ outDir, root, modelBase }) {
     fs.cpSync(src, path.join(outDir, path.relative('web', item)), { recursive: true });
   }
 
+  // Demo calibs (web/demo-data/calibs/*.json) are registered in the COPY of calibs/index.json only; extension/ stays untouched.
+  const calDir = path.join(root, 'web/demo-data/calibs');
+  const cals = fs.existsSync(calDir) ? fs.readdirSync(calDir).filter((f) => f.endsWith('.json')).sort() : [];
+  if (cals.length) {
+    const idxPath = path.join(outDir, 'ext/calibs/index.json');
+    const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+    for (const file of cals) {
+      const id = file.replace(/\.json$/, '');
+      fs.copyFileSync(path.join(calDir, file), path.join(outDir, 'ext/calibs', file));
+      if (idx.profiles.some((p) => p.id === id)) continue;
+      const av2 = /^av2/.test(id);
+      idx.profiles.push({ id, name: av2 ? `Argoverse 2 ${id}` : id, match: av2 ? 'av2|argoverse' : id,
+        dataset: av2 ? 'Argoverse 2 Sensor' : 'Demo', licence: 'CC BY-NC-SA 4.0', file });
+    }
+    fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1) + '\n');
+  }
+
   // detector.html: shim goes before the first ort script (same trick as tools/dev/mock_cvat.py); extBase/modelBase embedded here.
   const detPath = path.join(outDir, 'ext/ui/detector.html');
   const tags = '<script src="/shim/chrome-shim.js"></script>\n' +
-    `<script>ChromeShim.install(window, { extBase: '/ext/', modelBase: ${JSON.stringify(modelBase)} });</script>\n`;
+    `<script>ChromeShim.install(window, { extBase: new URL('/ext/', location.origin).href, modelBase: new URL(${JSON.stringify(modelBase).replace(/</g, '\\u003c')}, location.origin).href });</script>\n`;
   const html = fs.readFileSync(detPath, 'utf8');
   const re = /<script src="(\.\.\/)?ort\//;
   if (!re.test(html)) throw new Error('detector.html: không thấy <script src="…ort/"');
@@ -49,10 +74,12 @@ function build({ outDir, root, modelBase }) {
   return outDir;
 }
 
-module.exports = { build };
+module.exports = { build, resolveModelBase };
 
 if (require.main === module) {
   const a = process.argv, i = a.indexOf('--model-base');
-  const out = build({ modelBase: i >= 0 ? a[i + 1] : undefined });
-  console.log('web build →', path.relative(process.cwd(), out) || out);
+  try {
+    const out = build({ modelBase: i >= 0 ? a[i + 1] : undefined });
+    console.log('web build →', path.relative(process.cwd(), out) || out);
+  } catch (e) { console.error(e.message); process.exit(1); }
 }

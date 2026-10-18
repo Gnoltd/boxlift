@@ -21,3 +21,5 @@ dist/
 
 # Web demo build output
 web/dist/
+.vercel
+.env*

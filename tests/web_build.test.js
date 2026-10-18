@@ -18,6 +18,7 @@ ok('no database.json / background.js / bridge.js / options.* in output', !files.
 ok('no config/ or db/ dirs', !files.some((f) => /^ext\/(config|db)\//.test(f)));
 ok('keeps models/frustum.json and SHA256SUMS', files.includes('ext/models/frustum.json') && files.includes('ext/models/SHA256SUMS'));
 ok('copies shim', files.includes('shim/chrome-shim.js') && files.includes('shim/mock-cvat.js'));
+ok('service worker at the site root + its pure core in shim/', files.includes('sw.js') && files.includes('shim/sw-core.js') && /importScripts\('\/shim\/sw-core\.js'\)/.test(fs.readFileSync(path.join(outDir, 'sw.js'), 'utf8')));
 const info = JSON.parse(fs.readFileSync(path.join(outDir, 'build-info.json'), 'utf8'));
 assert.deepStrictEqual(info.scripts, manifest.content_scripts[1].js);
 ok('build-info scripts == content_scripts[1].js in order', true);
@@ -27,13 +28,14 @@ const det = fs.readFileSync(path.join(outDir, 'ext/ui/detector.html'), 'utf8');
 const iShim = det.indexOf('chrome-shim.js'), iOrt = det.search(/<script src="(\.\.\/)?ort\//);
 ok('detector.html has chrome-shim.js before ort/', iShim >= 0 && iOrt > iShim);
 ok('detector.html embeds modelBase', det.includes('https://cdn.example/models/') && det.includes('ChromeShim.install'));
+ok('detector.html derives absolute extBase at runtime', det.includes("new URL('/ext/', location.origin).href") && !det.includes("extBase: '/ext/'"));
 ok('source detector.html untouched', !fs.readFileSync(path.join(ROOT, 'extension/ui/detector.html'), 'utf8').includes('chrome-shim'));
 const size = files.filter((f) => !f.includes('models/')).reduce((s, f) => s + fs.statSync(path.join(outDir, f)).size, 0);
 ok(`output <= 90 MB (${(size / 1e6).toFixed(1)} MB)`, size <= 90e6);
 
 // optional inputs: copied when present, skipped (not an error) when absent
 // each optional source: present in the repo under test -> must be in the output, absent -> must not be
-for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/]]) {
+for (const [src, out] of [['web/tour', /^tour\//], ['web/demo-data', /^demo-data\//], ['web/index.html', /^index\.html$/], ['web/boot.js', /^boot\.js$/], ['web/sw.js', /^sw\.js$/]]) {
   const present = fs.existsSync(path.join(ROOT, src));
   ok(`optional ${src}: ${present ? 'copied' : 'skipped'} to match repo`, files.some((f) => out.test(f)) === present);
 }
@@ -54,8 +56,51 @@ build({ outDir: out2, root: fx });
 const f2 = walk(out2).map((f) => path.relative(out2, f));
 ok('optional inputs copied when present', ['index.html', 'boot.js', 'tour/t.js', 'demo-data/d.json'].every((f) => f2.includes(f)));
 ok('default modelBase is /models/', JSON.parse(fs.readFileSync(path.join(out2, 'build-info.json'), 'utf8')).modelBase === '/models/');
+// calib profiles shipped in web/demo-data/calibs are injected into the dist COPY of calibs/index.json (never the source)
+const srcIdx = fs.readFileSync(path.join(ROOT, 'extension/calibs/index.json'), 'utf8');
+ok('no demo calibs: index.json byte-identical to source', fs.readFileSync(path.join(out2, 'ext/calibs/index.json'), 'utf8') === srcIdx);
+const fx3 = path.join(tmp, 'root3');
+fs.cpSync(fx, fx3, { recursive: true });
+fs.mkdirSync(path.join(fx3, 'web/demo-data/calibs'), { recursive: true });
+fs.writeFileSync(path.join(fx3, 'web/demo-data/calibs/x.json'), '{"cameras":{}}');
+const out3 = path.join(tmp, 'dist3');
+build({ outDir: out3, root: fx3 });
+const idx3 = JSON.parse(fs.readFileSync(path.join(out3, 'ext/calibs/index.json'), 'utf8'));
+const e3 = idx3.profiles.filter((p) => p.id === 'x');
+ok('demo calib: one profile entry appended', e3.length === 1 && e3[0].file === 'x.json' && idx3.profiles[idx3.profiles.length - 1] === e3[0]);
+ok('demo calib: file copied to ext/calibs', fs.existsSync(path.join(out3, 'ext/calibs/x.json')));
+ok('demo calib: source index untouched', fs.readFileSync(path.join(fx3, 'extension/calibs/index.json'), 'utf8') === srcIdx);
+const av = JSON.parse(fs.readFileSync(path.join(outDir, 'ext/calibs/index.json'), 'utf8')).profiles.filter((p) => p.id === 'av2-20dd185d');
+ok('real build: av2 profile exact', av.length === 1 && av[0].match === 'av2|argoverse' && av[0].name === 'Argoverse 2 av2-20dd185d' && av[0].dataset === 'Argoverse 2 Sensor' && av[0].licence === 'CC BY-NC-SA 4.0' && av[0].file === 'av2-20dd185d.json' && new RegExp(av[0].match, 'i').test('argoverse2 av2-20dd185d'));
+const notice = fs.existsSync(path.join(outDir, 'demo-data/NOTICE.md')) ? fs.readFileSync(path.join(outDir, 'demo-data/NOTICE.md'), 'utf8') : '';
+ok('dist/demo-data/NOTICE.md names source, licence, changes', /Argoverse 2 Sensor/.test(notice) && /av2-20dd185d/.test(notice) && /creativecommons\.org\/licenses\/by-nc-sa\/4\.0/.test(notice) && /10 .*100/.test(notice) && /non-commercial|phi thương mại/i.test(notice));
+const evil = path.join(tmp, 'distEvil');
+build({ outDir: evil, root: ROOT, modelBase: 'https://x/</script><img src=x>/' });
+const detEvil = fs.readFileSync(path.join(evil, 'ext/ui/detector.html'), 'utf8');
+ok('modelBase cannot break out of the inline script', !detEvil.includes('</script><img') && detEvil.includes('\\u003c/script>'));
 const vc = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 ok('vercel.json output/build', vc.outputDirectory === 'web/dist' && vc.buildCommand === 'node tools/build-web.js');
+const hdr = (src) => { const h = vc.headers.find((x) => x.source === src); return h && Object.fromEntries(h.headers.map((k) => [k.key, k.value])); };
+ok('vercel.json SPA rewrite /tasks/* -> /index.html', JSON.stringify(vc.rewrites) === JSON.stringify([{ source: '/tasks/:path*', destination: '/index.html' }]));
+const IMM = 'public, max-age=31536000, immutable', HOUR = 'public, max-age=3600';
+ok('cache: immutable only for pcd/ctx', hdr('/demo-data/pcd/(.*)')['Cache-Control'] === IMM && hdr('/demo-data/ctx/(.*)')['Cache-Control'] === IMM);
+ok('cache: 1h for manifest, calibs, ort', hdr('/demo-data/demo-manifest.json')['Cache-Control'] === HOUR && hdr('/demo-data/calibs/(.*)')['Cache-Control'] === HOUR && hdr('/ext/ort/(.*)')['Cache-Control'] === HOUR);
+ok('no broad immutable /demo-data/(.*) rule', !vc.headers.some((h) => h.source === '/demo-data/(.*)') && vc.headers.filter((h) => h.headers.some((k) => /immutable/.test(k.value))).every((h) => /^\/demo-data\/(pcd|ctx)\//.test(h.source)));
+ok('wasm MIME kept', hdr('/(.*)\\.wasm')['Content-Type'] === 'application/wasm');
+ok('sw.js: no-cache + Service-Worker-Allowed /', hdr('/sw.js') && hdr('/sw.js')['Cache-Control'] === 'no-cache' && hdr('/sw.js')['Service-Worker-Allowed'] === '/');
+ok('shim/sw-core.js (imported by sw.js): no-cache', hdr('/shim/sw-core.js') && hdr('/shim/sw-core.js')['Cache-Control'] === 'no-cache');
+ok('X-Frame-Options SAMEORIGIN on all paths', hdr('/(.*)')['X-Frame-Options'] === 'SAMEORIGIN');
+// modelBase: on Vercel a missing MODEL_BASE must fail the build instead of silently shipping /models/
+const { resolveModelBase } = require('../tools/build-web.js');
+ok('resolveModelBase: explicit wins', resolveModelBase('https://a/', { VERCEL: '1', MODEL_BASE: 'https://b/' }) === 'https://a/');
+ok('resolveModelBase: env MODEL_BASE', resolveModelBase(undefined, { VERCEL: '1', MODEL_BASE: 'https://b/' }) === 'https://b/');
+ok('resolveModelBase: local fallback /models/', resolveModelBase(undefined, {}) === '/models/');
+let thrown = ''; try { resolveModelBase(undefined, { VERCEL: '1' }); } catch (e) { thrown = e.message; }
+ok('resolveModelBase: throws on Vercel without MODEL_BASE', /MODEL_BASE/.test(thrown));
+const sp = require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools/build-web.js')], { env: { ...process.env, VERCEL: '1', MODEL_BASE: '' }, encoding: 'utf8' });
+ok('build-web.js exits non-zero on Vercel without MODEL_BASE', sp.status !== 0 && /MODEL_BASE/.test(sp.stderr));
 
+const vi = fs.readFileSync(path.join(ROOT, '.vercelignore'), 'utf8').split('\n').map((l) => l.trim());
+ok('.vercelignore drops onnx/tests/docs but keeps tools/build-web.js', ['extension/models/*.onnx', 'tests/', 'docs/', 'tools/*', '!tools/build-web.js'].every((l) => vi.includes(l)) && !vi.some((l) => /^(extension|web)\/?$/.test(l)));
 fs.rmSync(tmp, { recursive: true, force: true });
 process.exit(fails ? 1 : 0);

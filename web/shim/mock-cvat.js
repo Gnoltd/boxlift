@@ -28,7 +28,7 @@
       if (action !== 'update' && action !== 'delete') return err(400, 'bad action');
       if (shapes.some((s) => find(ann.shapes, s) < 0) || tracks.some((t) => find(ann.tracks, t) < 0)) return err(404, 'object not found');
       for (const [list, key] of [[shapes, 'shapes'], [tracks, 'tracks']]) {
-        for (const x of list) { const k = find(ann[key], x); if (action === 'update') ann[key][k] = x; else ann[key].splice(k, 1); }
+        for (const x of list) { const k = find(ann[key], x); if (k < 0) continue; if (action === 'update') ann[key][k] = x; else ann[key].splice(k, 1); }
       }
       onChange(shapes.length, tracks.length);
       return ok({ version: 0, tags: [], shapes, tracks });
