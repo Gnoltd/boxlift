@@ -126,4 +126,9 @@ for (const l of ['vi', 'en']) {
   assert.ok(/Argoverse 2 Sensor Dataset \(CC BY-NC-SA 4\.0\)/.test(S[l].footer), l + ' footer credits Argoverse 2');
   assert.ok(!/nuScenes/i.test(JSON.stringify(S[l])), l + ' has no nuScenes text');
 }
+for (const l of ['vi', 'en']) {
+  assert.ok(!('creditsClose' in S[l]), l + ' unused creditsClose removed');
+  assert.ok(S[l].noticeUrl === '/demo-data/NOTICE.md' && S[l].noticeLabel, l + ' links to NOTICE.md');
+  assert.ok(/YOLOX/.test(S[l].footer) && /Apache/.test(S[l].footer) && /MTrans/.test(S[l].footer), l + ' footer names per-model licences');
+}
 console.log('web_tour OK');

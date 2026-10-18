@@ -104,7 +104,8 @@
     function creditsBlock() {
       const box = el('div', 'credits');
       const a = el('a', '', t('repoLabel')); a.href = t('repoUrl'); a.target = '_blank'; a.rel = 'noopener';
-      box.append(el('span', '', t('footer') + ' '), a);
+      const n = el('a', '', t('noticeLabel')); n.href = t('noticeUrl'); n.target = '_blank'; n.rel = 'noopener';
+      box.append(el('span', '', t('footer') + ' '), n, doc.createTextNode(' · '), a);
       return box;
     }
     function creditsBtn() {
