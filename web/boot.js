@@ -49,16 +49,17 @@
   const RESET_FLAG = 'demo:reset';
   const activeSessionKey = (origin, prefix) => (prefix || 'ext:') + 'active_session:' + origin;
   // "Đặt lại demo" sets RESET_FLAG in sessionStorage before reloading: the extension may write some keys back before unload,
-  // so the next boot clears every ext: / demo: key again. Returns the removed keys; never throws.
-  function cleanStart(ls, ss, origin) {
+  // so the next boot clears again the keys the tour's own reset clears (resetKeys = Tour.resetKeys, one predicate for both
+  // paths). Returns the removed keys; never throws.
+  function cleanStart(ls, ss, origin, resetKeys) {
     const gone = [];
     const drop = (k) => { try { if (ls.getItem(k) != null) { ls.removeItem(k); gone.push(k); } } catch (e) { /* storage blocked */ } };
     let reset = false;
     try { reset = !!(ss && ss.getItem(RESET_FLAG)); if (reset) ss.removeItem(RESET_FLAG); } catch (e) { reset = false; }
-    if (reset) {
+    if (reset && typeof resetKeys === 'function') {
       const ks = [];
       try { for (let i = 0; i < ls.length; i++) ks.push(ls.key(i)); } catch (e) { /* storage blocked */ }
-      ks.filter((k) => k && (k.startsWith('ext:') || k.startsWith('demo:'))).forEach(drop);
+      resetKeys(ks.filter(Boolean)).forEach(drop);
     }
     drop(activeSessionKey(origin));
     return gone;
@@ -123,6 +124,8 @@
   }
 
   // Service Worker (web/sw.js) caches the models under their stable URL; the model base rides on the registration URL.
+  // updateViaCache 'none': sw.js AND its importScripts (shim/sw-core.js) are always revalidated, so a core change reaches visitors.
+  const SW_OPTIONS = { scope: '/', updateViaCache: 'none' };
   const swUrl = (modelBase) => '/sw.js?base=' + encodeURIComponent(modelBase);
   // Register and wait (bounded) until the SW controls this page, so the prefetch and the detector iframe go through it.
   // Resolves false (never rejects) without SW support, when registration fails or times out: the demo then works uncached.
@@ -134,7 +137,7 @@
       let t = null;
       const end = (v) => { if (t !== null) clearTimeout(t); try { sw.removeEventListener('controllerchange', onChange); } catch (e) { /* ignore */ } resolve(v); };
       const onChange = () => end(true);
-      try { sw.register(url, { scope: '/' }).catch(() => end(false)); } catch (e) { end(false); return; }
+      try { sw.register(url, SW_OPTIONS).catch(() => end(false)); } catch (e) { end(false); return; }
       if (sw.controller) { end(true); return; }
       sw.addEventListener('controllerchange', onChange);
       t = setTimeout(() => end(!!sw.controller), timeoutMs || 3000);
@@ -258,7 +261,7 @@
       for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
       let ss = null; try { ss = win.sessionStorage; } catch (e) { /* blocked */ }
-      cleanStart(win.localStorage, ss, origin);
+      cleanStart(win.localStorage, ss, origin, win.Tour.resetKeys);
       seedStorage(win.localStorage, origin, manifest);
       seedWelcomeSeen(win.localStorage);
       wireFrameKeys(win);
@@ -280,5 +283,5 @@
     } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, chipView, langWatcher, swUrl, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, chipView, langWatcher, swUrl, SW_OPTIONS, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
 });

@@ -88,6 +88,7 @@ ok('cache: 1h for manifest, calibs, ort', hdr('/demo-data/demo-manifest.json')['
 ok('no broad immutable /demo-data/(.*) rule', !vc.headers.some((h) => h.source === '/demo-data/(.*)') && vc.headers.filter((h) => h.headers.some((k) => /immutable/.test(k.value))).every((h) => /^\/demo-data\/(pcd|ctx)\//.test(h.source)));
 ok('wasm MIME kept', hdr('/(.*)\\.wasm')['Content-Type'] === 'application/wasm');
 ok('sw.js: no-cache + Service-Worker-Allowed /', hdr('/sw.js') && hdr('/sw.js')['Cache-Control'] === 'no-cache' && hdr('/sw.js')['Service-Worker-Allowed'] === '/');
+ok('shim/sw-core.js (imported by sw.js): no-cache', hdr('/shim/sw-core.js') && hdr('/shim/sw-core.js')['Cache-Control'] === 'no-cache');
 ok('X-Frame-Options SAMEORIGIN on all paths', hdr('/(.*)')['X-Frame-Options'] === 'SAMEORIGIN');
 // modelBase: on Vercel a missing MODEL_BASE must fail the build instead of silently shipping /models/
 const { resolveModelBase } = require('../tools/build-web.js');

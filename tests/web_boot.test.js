@@ -1,6 +1,7 @@
 // node tests/web_boot.test.js — Boot.supported (pure) + helper for restoring a tour after reload.
 const assert = require('assert');
 const Boot = require('../web/boot.js');
+const Tour = require('../web/tour/tour.js');
 
 const CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const EDGE = CHROME + ' Edg/126.0.0.0';
@@ -105,6 +106,7 @@ assert.strictEqual(Boot.frameKeyAction({ key: 'f', target: { tagName: 'DIV', isC
 })().catch((err) => { console.error(err); process.exit(1); });
 
 // service worker: registration URL carries the absolute model base; controlPage is bounded and never throws
+assert.deepStrictEqual(Boot.SW_OPTIONS, { scope: '/', updateViaCache: 'none' });
 assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.js?base=' + encodeURIComponent('https://huggingface.co/u/m/resolve/main/'));
 (async () => {
   const mkNav = (o) => {
@@ -117,7 +119,7 @@ assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.
   assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 50), false, 'no SW support: false, no throw');
   n = mkNav({ controller: {} });
   assert.strictEqual(await Boot.controlPage(n.nav, '/sw.js?base=x', 50), true, 'already controlled (reload)');
-  assert.deepStrictEqual(n.reg, [['/sw.js?base=x', { scope: '/' }]], 'still registers (update check)');
+  assert.deepStrictEqual(n.reg, [['/sw.js?base=x', { scope: '/', updateViaCache: 'none' }]], 'still registers (update check)');
   n = mkNav({});
   const p = Boot.controlPage(n.nav, '/sw.js?base=x', 1000);
   setTimeout(() => { n.sw.controller = {}; n.ls.controllerchange(); }, 10);
@@ -141,17 +143,22 @@ assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.
   assert.strictEqual(Boot.activeSessionKey(O), 'ext:active_session:' + O);
   let ls = mk({ ['ext:active_session:' + O]: '{"session_id":"s1","saved_boxes":2}', 'demo:annotations': '{"shapes":[{}]}', 'ext:viewOpts': '{"lang":"en"}', 'demo:tour': '{"index":2}' });
   let ss = mk({});
-  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O), ['ext:active_session:' + O]);
+  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O, Tour.resetKeys), ['ext:active_session:' + O]);
   assert.strictEqual(ls.getItem('ext:active_session:' + O), null);
   assert.ok(ls.getItem('demo:annotations') && ls.getItem('ext:viewOpts') && ls.getItem('demo:tour'), 'plain reload keeps boxes, settings, tour');
   ls = mk({ ['ext:active_session:' + O]: '{}', 'demo:annotations': '{"shapes":[{}]}', 'ext:viewOpts': '{}', 'other': 'x' });
   ss = mk({ [Boot.RESET_FLAG]: '1' });
-  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O).sort(), ['demo:annotations', 'ext:active_session:' + O, 'ext:viewOpts'].sort());
+  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O, Tour.resetKeys).sort(), ['demo:annotations', 'ext:active_session:' + O, 'ext:viewOpts'].sort());
   assert.deepStrictEqual([...ls.m.keys()], ['other'], 'after reset: only foreign keys survive');
   assert.strictEqual(ss.getItem(Boot.RESET_FLAG), null, 'flag consumed');
   const blocked = { getItem: () => { throw new Error('blocked'); }, removeItem: () => { throw new Error('blocked'); } };
-  assert.deepStrictEqual(Boot.cleanStart(blocked, blocked, O), [], 'storage blocked: no throw');
-  assert.deepStrictEqual(Boot.cleanStart(mk({}), null, O), []);
+  assert.deepStrictEqual(Boot.cleanStart(blocked, blocked, O, Tour.resetKeys), [], 'storage blocked: no throw');
+  assert.deepStrictEqual(Boot.cleanStart(mk({}), null, O, Tour.resetKeys), []);
+  // the reset path uses the tour's own key predicate (one definition for both reset paths)
+  let asked = null;
+  ls = mk({ 'ext:a': '1', 'demo:b': '2' }); ss = mk({ [Boot.RESET_FLAG]: '1' });
+  Boot.cleanStart(ls, ss, O, (ks) => { asked = ks.slice(); return ['ext:a']; });
+  assert.deepStrictEqual(asked.sort(), ['demo:b', 'ext:a']); assert.deepStrictEqual([...ls.m.keys()], ['demo:b']);
   console.log('web_boot cleanStart ok');
 }
 

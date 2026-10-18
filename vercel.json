@@ -83,6 +83,15 @@
           "value": "/"
         }
       ]
+    },
+    {
+      "source": "/shim/sw-core.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }
