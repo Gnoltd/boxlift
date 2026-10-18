@@ -106,8 +106,11 @@
   async function startModels(win, modelBase) {
     const doc = win.document, ML = win.ModelLoader;
     const chip = doc.createElement('div'); chip.id = 'model-chip';
+    // Top layer (Popover API) for the same reason as the tour card: BoxLift's backdrop and the Tay/Tool chip paint over any z-index.
+    try { chip.setAttribute('popover', 'manual'); } catch (e) { /* fallback: z-index in index.html */ }
     const label = doc.createElement('span'), btn = doc.createElement('button');
     btn.type = 'button'; btn.hidden = true; chip.append(label, btn); doc.body.appendChild(chip);
+    try { chip.showPopover(); } catch (e) { chip.removeAttribute('popover'); }
     const lang = () => { try { return chipLang(win.localStorage.getItem('ext:viewOpts')); } catch (e) { return 'vi'; } };
     let st = { phase: 'loading', loaded: 0, total: 0, failed: 0 };
     const render = () => {
