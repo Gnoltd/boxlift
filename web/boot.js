@@ -44,6 +44,25 @@
     return written;
   }
 
+  // The extension keeps its open work session under 'active_session:<origin>' (function/session.js); a stored one with activity
+  // makes cvat.js show the "resume session" modal on every load. The demo always starts a fresh session; boxes are untouched.
+  const RESET_FLAG = 'demo:reset';
+  const activeSessionKey = (origin, prefix) => (prefix || 'ext:') + 'active_session:' + origin;
+  // "Đặt lại demo" sets RESET_FLAG in sessionStorage before reloading: the extension may write some keys back before unload,
+  // so the next boot clears every ext: / demo: key again. Returns the removed keys; never throws.
+  function cleanStart(ls, ss, origin) {
+    const gone = [];
+    const drop = (k) => { try { if (ls.getItem(k) != null) { ls.removeItem(k); gone.push(k); } } catch (e) { /* storage blocked */ } };
+    let reset = false;
+    try { reset = !!(ss && ss.getItem(RESET_FLAG)); if (reset) ss.removeItem(RESET_FLAG); } catch (e) { reset = false; }
+    if (reset) {
+      const ks = [];
+      try { for (let i = 0; i < ls.length; i++) ks.push(ls.key(i)); } catch (e) { /* storage blocked */ }
+      ks.filter((k) => k && (k.startsWith('ext:') || k.startsWith('demo:'))).forEach(drop);
+    }
+    drop(activeSessionKey(origin));
+    return gone;
+  }
   // D / F are CVAT's own previous / next frame shortcuts; the fake host page has to provide them.
   function frameKeyAction(ev) {
     const t = ev && ev.target;
@@ -213,6 +232,8 @@
       wireFrameControls(doc, manifest.frames.length - 1);
       for (const s of ['/shim/chrome-shim.js', '/shim/mock-cvat.js', '/shim/model-loader.js', '/tour/strings.js', '/tour/tour.js']) { url = s; await loadScript(doc, s); }
       loadCss(doc, '/tour/tour.css');
+      let ss = null; try { ss = win.sessionStorage; } catch (e) { /* blocked */ }
+      cleanStart(win.localStorage, ss, origin);
       seedStorage(win.localStorage, origin, manifest);
       wireFrameKeys(win);
       win.ChromeShim.install(win, { extBase: absBase('/ext/', origin), modelBase });
@@ -233,5 +254,5 @@
     } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, controlPage, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, activeSessionKey, cleanStart, RESET_FLAG, controlPage, run, MIN_WIDTH };
 });

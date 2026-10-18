@@ -132,3 +132,25 @@ assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.
   assert.strictEqual(await Boot.controlPage(thrower, '/sw.js?base=x', 40), false, 'access throws: false');
   console.log('web_boot sw ok');
 })().catch((err) => { console.error(err); process.exit(1); });
+
+// clean start: the stored ACTIVE session is dropped on every load (no resume modal, counter from 0); boxes stay.
+// After "Đặt lại demo" (sessionStorage flag) every ext:/demo: key is cleared again, beating any write-back before unload.
+{
+  const O = 'https://d.example';
+  const mk = (o) => { const m = new Map(Object.entries(o)); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), key: (i) => [...m.keys()][i] ?? null, get length() { return m.size; }, m }; };
+  assert.strictEqual(Boot.activeSessionKey(O), 'ext:active_session:' + O);
+  let ls = mk({ ['ext:active_session:' + O]: '{"session_id":"s1","saved_boxes":2}', 'demo:annotations': '{"shapes":[{}]}', 'ext:viewOpts': '{"lang":"en"}', 'demo:tour': '{"index":2}' });
+  let ss = mk({});
+  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O), ['ext:active_session:' + O]);
+  assert.strictEqual(ls.getItem('ext:active_session:' + O), null);
+  assert.ok(ls.getItem('demo:annotations') && ls.getItem('ext:viewOpts') && ls.getItem('demo:tour'), 'plain reload keeps boxes, settings, tour');
+  ls = mk({ ['ext:active_session:' + O]: '{}', 'demo:annotations': '{"shapes":[{}]}', 'ext:viewOpts': '{}', 'other': 'x' });
+  ss = mk({ [Boot.RESET_FLAG]: '1' });
+  assert.deepStrictEqual(Boot.cleanStart(ls, ss, O).sort(), ['demo:annotations', 'ext:active_session:' + O, 'ext:viewOpts'].sort());
+  assert.deepStrictEqual([...ls.m.keys()], ['other'], 'after reset: only foreign keys survive');
+  assert.strictEqual(ss.getItem(Boot.RESET_FLAG), null, 'flag consumed');
+  const blocked = { getItem: () => { throw new Error('blocked'); }, removeItem: () => { throw new Error('blocked'); } };
+  assert.deepStrictEqual(Boot.cleanStart(blocked, blocked, O), [], 'storage blocked: no throw');
+  assert.deepStrictEqual(Boot.cleanStart(mk({}), null, O), []);
+  console.log('web_boot cleanStart ok');
+}

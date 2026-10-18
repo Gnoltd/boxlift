@@ -97,6 +97,8 @@
 
     function reset() {
       if (!win.confirm(t('resetConfirm'))) return;
+      // The extension may write a key back before the page unloads; this flag makes the next boot clear everything again (Boot.cleanStart).
+      try { win.sessionStorage.setItem('demo:reset', '1'); } catch (e) { /* storage blocked: the clear below still runs */ }
       const s = ls(); try { if (s) { const ks = []; for (let i = 0; i < s.length; i++) ks.push(s.key(i)); resetKeys(ks).forEach((k) => s.removeItem(k)); } } catch (e) { /* storage blocked */ }
       win.location.reload();
     }
