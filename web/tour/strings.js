@@ -17,7 +17,7 @@
       doneTitle: 'Bạn có thể tự do thử', doneBody: 'Đây là sandbox: thử mọi công cụ, dữ liệu chỉ lưu trong trình duyệt của bạn. Bấm "Làm lại hướng dẫn" để xem lại từ đầu hoặc "Đặt lại demo" để xoá hết box đã vẽ.',
       next: 'Tiếp', skip: 'Bỏ qua', restartTour: 'Làm lại hướng dẫn', resetDemo: 'Đặt lại demo', hide: 'Ẩn',
       resetConfirm: 'Xoá mọi box và cài đặt đã lưu trong trình duyệt này, rồi tải lại?',
-      footer: 'Dữ liệu: Argoverse 2 Sensor Dataset (CC BY-NC-SA 4.0). Mô hình: YOLOX (Apache 2.0); MTrans, Frustum PointNet và mô hình hướng xe huấn luyện trên dữ liệu CC BY-NC-SA nên chỉ dùng phi thương mại. Đây là bản demo miễn phí, phi thương mại.',
+      footer: 'Dữ liệu: Argoverse 2 Sensor Dataset (CC BY-NC-SA 4.0). Mô hình: YOLOX (Apache 2.0); MTrans, Frustum PointNet và mô hình hướng xe huấn luyện trên dữ liệu CC BY-NC-SA nên chỉ dùng phi thương mại. Màn hình 3D: three.js (MIT). Đây là bản demo miễn phí, phi thương mại.',
       creditsToggle: 'Giấy phép', noticeLabel: 'Chi tiết dữ liệu', noticeUrl: '/demo-data/NOTICE.md',
       repoLabel: 'Mã nguồn trên GitHub', repoUrl: 'https://github.com/Gnoltd/boxlift'
     },
@@ -33,7 +33,7 @@
       doneTitle: 'Free to explore', doneBody: 'This is a sandbox: try every tool, your work is stored only in this browser. Press "Restart tour" to see the tour again or "Reset demo" to delete all drawn boxes.',
       next: 'Next', skip: 'Skip', restartTour: 'Restart tour', resetDemo: 'Reset demo', hide: 'Hide',
       resetConfirm: 'Delete all boxes and settings saved in this browser, then reload?',
-      footer: 'Data: Argoverse 2 Sensor Dataset (CC BY-NC-SA 4.0). Models: YOLOX (Apache 2.0); MTrans, Frustum PointNet and the vehicle-heading model are trained on CC BY-NC-SA data, so non-commercial use only. This is a free, non-commercial demo.',
+      footer: 'Data: Argoverse 2 Sensor Dataset (CC BY-NC-SA 4.0). Models: YOLOX (Apache 2.0); MTrans, Frustum PointNet and the vehicle-heading model are trained on CC BY-NC-SA data, so non-commercial use only. 3D screen: three.js (MIT). This is a free, non-commercial demo.',
       creditsToggle: 'Licence', noticeLabel: 'Data details', noticeUrl: '/demo-data/NOTICE.md',
       repoLabel: 'Source on GitHub', repoUrl: 'https://github.com/Gnoltd/boxlift'
     }

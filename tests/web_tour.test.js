@@ -218,6 +218,7 @@ for (const l of ['vi', 'en']) {
   assert.ok(!/đã bật sẵn|already on/i.test(s.boxBody), l + ' box does not claim Draw mode is on');
   assert.ok(/CC BY-NC-SA 4\.0/.test(s.footer) && s.creditsToggle, l + ' credits in tour card');
   assert.ok(/Argoverse 2 Sensor Dataset \(CC BY-NC-SA 4\.0\)/.test(s.footer), l + ' footer credits Argoverse 2');
+  assert.ok(/three\.js/.test(s.footer) && /MIT/.test(s.footer), l + ' footer credits three.js (MIT)');
   assert.ok(!/nuScenes/i.test(JSON.stringify(s)), l + ' has no nuScenes text');
   assert.ok(!('creditsClose' in s), l + ' unused creditsClose removed');
   assert.ok(s.noticeUrl === '/demo-data/NOTICE.md' && s.noticeLabel, l + ' links to NOTICE.md');
