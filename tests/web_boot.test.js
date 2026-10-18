@@ -171,3 +171,21 @@ assert.strictEqual(Boot.swUrl('https://huggingface.co/u/m/resolve/main/'), '/sw.
   assert.strictEqual(Boot.seedWelcomeSeen({ getItem: () => { throw new Error('x'); } }), false);
   console.log('web_boot welcome ok');
 }
+
+// model chip follows the extension language (VI and EN, every phase) and re-renders when it changes
+{
+  const vi = Boot.chipView({ phase: 'loading', loaded: 1e6, total: 2e6 }, 'vi'), en = Boot.chipView({ phase: 'loading', loaded: 1e6, total: 2e6 }, 'en');
+  assert.deepStrictEqual(vi, { text: 'Đang tải mô hình AI 1.0/2.0 MB', retry: 'Thử lại', cls: 'loading', showRetry: false });
+  assert.deepStrictEqual(en, { text: 'Loading AI models 1.0/2.0 MB', retry: 'Retry', cls: 'loading', showRetry: false });
+  assert.strictEqual(Boot.chipView({ phase: 'done' }, 'en').text, 'AI models ready');
+  assert.strictEqual(Boot.chipView({ phase: 'done' }, 'vi').text, 'Đã tải xong mô hình AI');
+  assert.deepStrictEqual(Boot.chipView({ phase: 'error', failed: 2 }, 'en'), { text: 'Could not load AI models (2 files)', retry: 'Retry', cls: 'error', showRetry: true });
+  assert.deepStrictEqual(Boot.chipView({ phase: 'error', failed: 1 }, 'vi'), { text: 'Không tải được mô hình AI (1 tệp)', retry: 'Thử lại', cls: 'error', showRetry: true });
+  assert.strictEqual(Boot.chipView({ phase: 'done' }, 'fr').text, 'Đã tải xong mô hình AI', 'unknown language: Vietnamese');
+  let lang = 'vi'; const seen = [];
+  const tick = Boot.langWatcher(() => lang, (l) => seen.push(l));
+  tick(); assert.deepStrictEqual(seen, []);
+  lang = 'en'; tick(); tick(); assert.deepStrictEqual(seen, ['en'], 'one re-render per change');
+  lang = 'vi'; tick(); assert.deepStrictEqual(seen, ['en', 'vi']);
+  console.log('web_boot chip lang ok');
+}

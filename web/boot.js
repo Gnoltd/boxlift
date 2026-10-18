@@ -153,6 +153,16 @@
     if (st.phase === 'error') return t.error.replace('{n}', st.failed);
     return t.loading.replace('{a}', mb(st.loaded)).replace('{b}', mb(st.total));
   }
+  function chipView(st, lang) {
+    return { text: chipText(st, lang), retry: (CHIP[lang] || CHIP.vi).retry, cls: st.phase, showRetry: st.phase === 'error' };
+  }
+  // Same-window localStorage writes fire no 'storage' event, so the chip polls the language like the tour does: tick() calls
+  // onChange(lang) once per change.
+  function langWatcher(read, onChange) {
+    let last = read();
+    return () => { const l = read(); if (l !== last) { last = l; onChange(l); } };
+  }
+
   // Non-blocking chip; prefetch starts after the extension scripts so it never delays first paint of the canvas.
   async function startModels(win, modelBase) {
     const doc = win.document, ML = win.ModelLoader;
@@ -165,13 +175,14 @@
     const lang = () => { try { return chipLang(win.localStorage.getItem('ext:viewOpts')); } catch (e) { return 'vi'; } };
     let st = { phase: 'loading', loaded: 0, total: 0, failed: 0 };
     const render = () => {
-      label.textContent = chipText(st, lang()); chip.className = st.phase;
-      btn.hidden = st.phase !== 'error'; btn.textContent = CHIP[lang()].retry;
+      const v = chipView(st, lang());
+      label.textContent = v.text; chip.className = v.cls; btn.hidden = !v.showRetry; btn.textContent = v.retry;
     };
+    const poll = win.setInterval(langWatcher(lang, render), 1000);
     let failed = [];
     const finish = (r) => {
       failed = r.failed; st = { phase: r.ok ? 'done' : 'error', loaded: st.loaded, total: st.total, failed: failed.length }; render();
-      if (r.ok) win.setTimeout(() => chip.remove(), 4000);
+      if (r.ok) win.setTimeout(() => { win.clearInterval(poll); chip.remove(); }, 4000);
     };
     const onProgress = (e) => { st = { phase: 'loading', loaded: e.loaded, total: e.total, failed: 0 }; render(); };
     btn.addEventListener('click', () => {
@@ -269,5 +280,5 @@
     } catch (e) { dispose(); fail(doc, e.url || url, e.message); }
   }
 
-  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, swUrl, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
+  return { supported, restoreDetail, absBase, seedEntries, seedStorage, frameKeyAction, wireFrameKeys, waitFor, openPanel, guardBoot, chipText, chipLang, chipView, langWatcher, swUrl, activeSessionKey, cleanStart, seedWelcomeSeen, RESET_FLAG, controlPage, run, MIN_WIDTH };
 });
